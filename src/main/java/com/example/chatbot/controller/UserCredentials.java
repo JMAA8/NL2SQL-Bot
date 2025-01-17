@@ -3,6 +3,7 @@ package com.example.chatbot.controller;
 public class UserCredentials {
     private String username;
     private String password;
+    private String email; // Neu hinzugefügt
 
     // Getter und Setter
     public String getUsername() {
@@ -19,5 +20,13 @@ public class UserCredentials {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

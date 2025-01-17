@@ -1,7 +1,7 @@
 package com.example.chatbot.controller;
 
 import com.example.chatbot.entity.User;
-import com.example.chatbot.repository.UserRepository;
+import com.example.chatbot.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -16,13 +16,13 @@ import java.util.List;
 public class AdminController {
 
     @Inject
-    UserRepository userRepository;
+    UserService userService;
 
     // Liste aller Benutzer abrufen
     @GET
     @Path("/users")
     public Response getAllUsers() {
-        List<User> users = userRepository.listAll();
+        List<User> users = userService.getAllUsers();
         return Response.ok(users).build();
     }
 
@@ -30,9 +30,7 @@ public class AdminController {
     @DELETE
     @Path("/user/{id}")
     public Response deleteUser(@PathParam("id") Long id) {
-        User user = userRepository.findById(id);
-        if (user != null) {
-            userRepository.delete(user);
+        if (userService.deleteUserById(id)) {
             return Response.ok("Benutzer gelöscht").build();
         }
         return Response.status(Response.Status.NOT_FOUND).build();
@@ -42,12 +40,23 @@ public class AdminController {
     @PUT
     @Path("/user/{id}/role")
     public Response updateUserRole(@PathParam("id") Long id, @QueryParam("role") String role) {
-        User user = userRepository.findById(id);
-        if (user != null) {
-            // TODO: Rolle zuweisen (abhängig von deiner Rollenlogik)
-            return Response.ok("Rolle aktualisiert").build();
+        try {
+            userService.assignRoleToUser(id, role);
+            return Response.ok("Rolle erfolgreich aktualisiert").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
-        return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    // Rolle von einem Benutzer entfernen
+    @DELETE
+    @Path("/user/{id}/role")
+    public Response removeUserRole(@PathParam("id") Long id, @QueryParam("role") String role) {
+        try {
+            userService.removeRoleFromUser(id, role);
+            return Response.ok("Rolle erfolgreich entfernt").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 }
-

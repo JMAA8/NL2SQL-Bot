@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS roles (
                                      roleName VARCHAR(255) UNIQUE NOT NULL
 );
 
-INSERT INTO roles (roleName) VALUES ('ADMIN'), ('USER')
+INSERT INTO roles (roleName) VALUES ('ADMIN')
 ON CONFLICT (roleName) DO NOTHING;
 
 -- Tabelle users erstellen
@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
 -- Tabelle groups erstellen
 CREATE TABLE IF NOT EXISTS groups (
                                       id BIGSERIAL PRIMARY KEY,
-                                      groupName VARCHAR(255) UNIQUE NOT NULL
+                                      groupName VARCHAR(255) UNIQUE NOT NULL,
+                                      owner_id BIGINT NOT NULL
 );
 
 -- Tabelle group_users erstellen (Many-to-Many-Beziehung zwischen groups und users)
