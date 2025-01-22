@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/user'; // Basis-URL für Gruppen-Endpoints
+const API_BASE_URL = 'http://localhost:8080/groups'; // Basis-URL für Gruppen-Endpoints
 
 // Alle Gruppen abrufen
 export const getAllGroups = async () => {

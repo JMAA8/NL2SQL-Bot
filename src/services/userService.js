@@ -1,13 +1,15 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/user'; // Basis-URL für Benutzer-Endpoints
+const API_BASE_URL = 'http://localhost:8080/user'; // Basis-URL für user-Endpoints
+const API_BASE_URL_Admin = 'http://localhost:8080/admin'; //Basis-URL für admin Endpoints
 
 // Alle Benutzer abrufen
 export const getAllUsers = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/all`, {
+        const response = await axios.get(`${API_BASE_URL_Admin}/users`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
+        console.log('Userliste aus Response: ', response.data);
         return response.data; // Liste der Benutzer
     } catch (error) {
         throw error.response?.data || 'Fehler beim Abrufen der Benutzer.';
@@ -85,6 +87,7 @@ export const removeRoleFromUser = async (userId, roleName) => {
         throw error.response?.data || 'Fehler beim Entfernen der Rolle.';
     }
 };
+
 
 export default {
     getAllUsers,

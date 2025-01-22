@@ -6,7 +6,7 @@ function Footer() {
         <footer className="footer">
             <div className="container">
                 <p className="footer-text">
-                    © {new Date().getFullYear()} Chatbot Dashboard. Alle Rechte vorbehalten.
+                    © {new Date().getFullYear()} Chatbot Fra Uas. Alle Rechte vorbehalten.
                 </p>
                 <nav className="footer-nav">
                     <Link to="/impressum" className="footer-link">

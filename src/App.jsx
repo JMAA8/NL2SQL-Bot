@@ -8,6 +8,7 @@ import BasicUserDashboard from './components/Dashboard/BasicUserDashboard';
 import ProtectedRoute from './components/Shared/ProtectedRoute';
 import Header from './components/Shared/Header';
 import Footer from './components/Shared/Footer';
+import LandingPage from './components/Dashboard/LandingPage';
 
 function App() {
     return (
@@ -15,6 +16,7 @@ function App() {
             <Header />
             <main>
                 <Routes>
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route
@@ -40,7 +42,8 @@ function App() {
                                 <BasicUserDashboard />
                             </ProtectedRoute>
                         }
-                    />
+                    />{/* Fallback für nicht existierende Routen */}
+                    <Route path="*" element={<div>404 - Seite nicht gefunden</div>} />
                 </Routes>
             </main>
             <Footer />

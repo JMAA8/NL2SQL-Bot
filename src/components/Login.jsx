@@ -13,15 +13,32 @@ const Login = () => {
         console.log('Login.jsx, handleLogin anfang');
         e.preventDefault();
         try {
-            console.log('Login.jsx, handleLogin try');
             const response = await authService.login(username, password);
             console.log('Login.js: Erhaltenes Token:', response.token);
             const decoded = jwtDecode(response.token);
             const userRole = decoded.groups?.[0]; // Zugriff auf groups statt roles
-            if (userRole === 'ADMIN') navigate('/admin');
-            else if (userRole === 'ADVANCED_USER') navigate('/advanced-user');
-            else if (userRole === 'BASIC_USER') navigate('/basic-user');
-            else throw new Error('Unbekannte Rolle');
+            console.log('UserRolle: ', userRole)
+            if (userRole === 'ADMIN') {
+                navigate('/admin');
+            }
+            else if (userRole === 'ADVANCED_USER'){
+                navigate('/advanced-user');
+            }
+            else if (userRole === 'BASIC_USER') {
+                console.log('Login.js: if-Statement basicUser');
+                //navigate('/basic-user');
+                try{
+                    console.log('basicUser try');
+                    navigate('/basic-user');
+                    console.log('nach navigate basicUser');
+                } catch (error) {
+                    console.error('Navigate fehlgeschlagen:', error);
+                    setErrorMessage('Ein Fehler ist aufgetreten.');
+                }
+            }
+            else {
+                throw new Error('Unbekannte Rolle');
+            }
         } catch (error) {
             console.log('Login.jsx, handleLogin error');
             setErrorMessage(error.response?.data || 'Login fehlgeschlagen.');

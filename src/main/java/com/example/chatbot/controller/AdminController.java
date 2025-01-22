@@ -22,7 +22,9 @@ public class AdminController {
     @GET
     @Path("/users")
     public Response getAllUsers() {
+        System.out.println("AdminController/getAllUser: Userliste aufgerufen");
         List<User> users = userService.getAllUsers();
+        System.out.println("AdminController/getAllUsers: Userliste:" + users);
         return Response.ok(users).build();
     }
 

@@ -9,13 +9,19 @@ function ProtectedRoute({ role, children }) {
     if (token) {
         try {
             const decoded = jwtDecode(token);
+            console.log('ProtectedRoute: Decoded Token:', decoded);
             userRole = decoded.groups?.[0]; // Zugriff auf die erste Rolle aus dem `groups`-Array
+            console.log('ProtectedRoute: UserRole:', userRole);
         } catch (error) {
             console.error('Invalid token');
         }
     }
+    console.log('ProtectedRoute: Token:', token);
+    console.log('ProtectedRoute: UserRole:', userRole);
+    console.log('ProtectedRoute: Erwartete Rolle:', role);
 
     if (!token || userRole !== role) {
+        console.log('ProtectedRoute: Zugriff verweigert');
         return <Navigate to="/login" />;
     }
     return children;
