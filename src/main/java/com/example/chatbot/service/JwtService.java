@@ -9,9 +9,10 @@ import java.util.Set;
 @ApplicationScoped
 public class JwtService {
 
-    public String generateToken(String username, Set<String> roles) {
+    public String generateToken(String username, Long userId, Set<String> roles) {
         return Jwt.issuer("chatbotBackend")
                 .subject(username)
+                .claim("userId", userId)
                 .groups(roles)
                 .expiresAt(System.currentTimeMillis() / 1000 + 3600)
                 .sign();

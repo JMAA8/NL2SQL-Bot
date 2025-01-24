@@ -1,16 +1,25 @@
 package com.example.chatbot.chat;
 
 public class ChatRequest {
-    private String username; // Neu
+    private Long userId; // Benutzer-ID
+    private Long chatId; // Chat-ID (optional, für bestehende Chats)
     private String prompt;
 
     // Getter und Setter
-    public String getUsername() {
-        return username;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(Long chatId) {
+        this.chatId = chatId;
     }
 
     public String getPrompt() {

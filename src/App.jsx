@@ -9,6 +9,7 @@ import ProtectedRoute from './components/Shared/ProtectedRoute';
 import Header from './components/Shared/Header';
 import Footer from './components/Shared/Footer';
 import LandingPage from './components/Dashboard/LandingPage';
+import Chat from "./components/Dashboard/Chat";
 
 function App() {
     return (
@@ -43,6 +44,7 @@ function App() {
                             </ProtectedRoute>
                         }
                     />{/* Fallback für nicht existierende Routen */}
+                    <Route path="/chat" element={<Chat />} />
                     <Route path="*" element={<div>404 - Seite nicht gefunden</div>} />
                 </Routes>
             </main>

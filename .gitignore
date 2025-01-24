@@ -25,6 +25,10 @@ nb-configuration.xml
 .vscode
 .factorypath
 
+# Node.js
+node_modules/
+npm-debug.log*
+
 # OSX
 .DS_Store
 

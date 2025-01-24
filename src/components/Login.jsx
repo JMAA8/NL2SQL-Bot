@@ -1,6 +1,6 @@
-import { jwtDecode } from 'jwt-decode';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import {jwtDecode} from 'jwt-decode';
 import authService from '../services/authService';
 
 const Login = () => {
@@ -10,58 +10,59 @@ const Login = () => {
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
-        console.log('Login.jsx, handleLogin anfang');
         e.preventDefault();
+        console.log('Login.jsx, handleLogin gestartet');
+
         try {
+            // Login beim Backend
             const response = await authService.login(username, password);
-            console.log('Login.js: Erhaltenes Token:', response.token);
+            console.log('Login.jsx: Erhaltenes Token:', response.token);
+
+            // Token dekodieren
             const decoded = jwtDecode(response.token);
-            const userRole = decoded.groups?.[0]; // Zugriff auf groups statt roles
-            console.log('UserRolle: ', userRole)
-            if (userRole === 'ADMIN') {
-                navigate('/admin');
-            }
-            else if (userRole === 'ADVANCED_USER'){
-                navigate('/advanced-user');
-            }
-            else if (userRole === 'BASIC_USER') {
-                console.log('Login.js: if-Statement basicUser');
-                //navigate('/basic-user');
-                try{
-                    console.log('basicUser try');
-                    navigate('/basic-user');
-                    console.log('nach navigate basicUser');
-                } catch (error) {
-                    console.error('Navigate fehlgeschlagen:', error);
-                    setErrorMessage('Ein Fehler ist aufgetreten.');
-                }
-            }
-            else {
-                throw new Error('Unbekannte Rolle');
-            }
+            const userId = decoded.userId; // Benutzer-ID aus dem Token
+            const userRole = decoded.groups?.[0]; // Erste Rolle aus dem `groups`-Array
+
+            console.log('Benutzer-ID:', userId);
+            console.log('Benutzer-Rolle:', userRole);
+
+            // Token im LocalStorage speichern
+            localStorage.setItem('token', response.token);
+
+            // Weiterleitung zur Chat-Seite
+            navigate('/chat');
         } catch (error) {
-            console.log('Login.jsx, handleLogin error');
+            console.error('Login.jsx, handleLogin Fehler:', error);
             setErrorMessage(error.response?.data || 'Login fehlgeschlagen.');
         }
     };
 
     return (
-        <form onSubmit={handleLogin}>
-            <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-            />
-            <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            {errorMessage && <p>{errorMessage}</p>}
-            <button type="submit">Login</button>
-        </form>
+        <div className="form-container">
+            <h1>Login</h1>
+            {errorMessage && <p className="form-error">{errorMessage}</p>}
+            <form onSubmit={handleLogin} className="form">
+                <input
+                    type="text"
+                    placeholder="Benutzername"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="form-input"
+                    required
+                />
+                <input
+                    type="password"
+                    placeholder="Passwort"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="form-input"
+                    required
+                />
+                <button type="submit" className="form-button">
+                    Login
+                </button>
+            </form>
+        </div>
     );
 };
 

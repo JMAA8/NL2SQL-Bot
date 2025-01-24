@@ -38,7 +38,7 @@ public class AuthController {
                     Set<String> roles = user.getRoles().stream()
                             .map(role -> role.getRoleName())
                             .collect(Collectors.toSet());
-                    String token = jwtService.generateToken(user.getUsername(), roles);
+                    String token = jwtService.generateToken(user.getUsername(), user.getId(), roles);
                     return Response.ok("{\"token\": \"" + token + "\"}").build();
                 })
                 .orElse(Response.status(Response.Status.UNAUTHORIZED)
@@ -64,13 +64,13 @@ public class AuthController {
         return Response.ok("Test erfolgreich").build();
     }
 
-    @GET
+    /*@GET
     @Path("/generate-admin-token")
     @RolesAllowed("ADMIN")
     public Response generateAdminToken() {
         String username = "admin";
         Set<String> roles = Set.of("ADMIN");
-        String token = jwtService.generateToken(username, roles);
+        String token = jwtService.generateToken(username, id, roles);
         return Response.ok("{\"token\": \"" + token + "\"}").build();
-    }
+    }*/
 }
