@@ -3,8 +3,11 @@ package com.example.chatbot.entity;
 import java.util.ArrayList;
 import java.util.List;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+
 import java.time.LocalDateTime;
 
+@MongoEntity(collection = "Chat")
 public class Chat extends PanacheMongoEntity {
     private Long chatId; // Chat ID
     private Long userId;

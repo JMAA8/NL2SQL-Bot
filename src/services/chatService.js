@@ -17,7 +17,7 @@ const getUserIdFromToken = () => {
 export const getUserChats = async () => {
     try {
         const userId = getUserIdFromToken();
-        console.error('ChatService - UserID:', userId);
+       console.error('ChatService - UserID:', userId);
         const response = await axios.get(`${API_BASE_URL}/user/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
@@ -42,7 +42,12 @@ export const getChatMessages = async (chatId) => {
 };
 
 // Nachricht senden (für neuen oder bestehenden Chat)
+
 export const sendMessage = async (chatId, prompt) => {
+  /*  if (!chatId || !prompt) {
+     console.error('Chat-ID oder Prompt fehlen.');
+     return;
+    }*/
     try {
         const userId = getUserIdFromToken();
         console.log('Sende Daten:', { userId, chatId, prompt });
@@ -89,11 +94,12 @@ export const deleteChat = async (chatId) => {
         throw error.response?.data || 'Fehler beim Löschen des Chats.';
     }
 };
-
-export default {
+const chatService = {
     getUserChats,
     getChatMessages,
     sendMessage,
     updateChatTitle,
     deleteChat,
 };
+
+export default chatService;

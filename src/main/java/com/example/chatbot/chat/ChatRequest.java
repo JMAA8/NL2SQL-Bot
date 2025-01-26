@@ -1,5 +1,8 @@
 package com.example.chatbot.chat;
 
+import io.quarkus.mongodb.panache.common.MongoEntity;
+
+@MongoEntity(collection = "Chat")
 public class ChatRequest {
     private Long userId; // Benutzer-ID
     private Long chatId; // Chat-ID (optional, für bestehende Chats)
@@ -11,6 +14,7 @@ public class ChatRequest {
     }
 
     public void setUserId(Long userId) {
+
         this.userId = userId;
     }
 
@@ -19,6 +23,7 @@ public class ChatRequest {
     }
 
     public void setChatId(Long chatId) {
+
         this.chatId = chatId;
     }
 
@@ -27,6 +32,7 @@ public class ChatRequest {
     }
 
     public void setPrompt(String prompt) {
+
         this.prompt = prompt;
     }
 }

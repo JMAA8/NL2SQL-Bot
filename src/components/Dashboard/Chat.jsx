@@ -44,7 +44,8 @@ function Chat() {
             alert('Nachricht darf nicht leer sein!');
             return;
         }
-
+        // Debugging: Ausgabe von currentChatId vor dem Senden
+       // console.log('Aktuelle Chat-ID vor dem Senden:', currentChatId);//
         try {
             const response = await chatService.sendMessage(currentChatId, currentMessage);
             setMessages((prev) => [...prev, response]);
