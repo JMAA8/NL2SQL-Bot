@@ -3,20 +3,22 @@ package com.example.chatbot.entity;
 import java.util.ArrayList;
 import java.util.List;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import java.time.LocalDateTime;
 
 public class Chat extends PanacheMongoEntity {
-    private Long id;
+    private Long chatId; // Chat ID
     private Long userId;
     private String title; // Optional: Titel des Chats
     private List<ChatMessage> messages = new ArrayList<>();
+    private LocalDateTime createdAt; // Zeitpunkt der Chat-Erstellung
 
     // Getter und Setter
-    public Long getId() {
-        return id;
+    public Long getChatId() {
+        return chatId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setChatId(Long chatId) {
+        this.chatId = chatId;
     }
 
     public Long getUserId() {
@@ -41,5 +43,13 @@ public class Chat extends PanacheMongoEntity {
 
     public void setMessages(List<ChatMessage> messages) {
         this.messages = messages;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

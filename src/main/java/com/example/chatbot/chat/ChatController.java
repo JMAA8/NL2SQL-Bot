@@ -19,29 +19,46 @@ public class ChatController {
     LLMService llmService;
 
     @Inject
-    ChatService chatService; // Neu: Service für Chat-Verwaltung
+    ChatService chatService;
 
-    // Neue Nachricht senden (neuer oder bestehender Chat)
-    @POST
-    public Response sendMessage(ChatRequest request) {
-        String llmResponse = llmService.getResponse(request.getPrompt());
-        ChatMessage message = chatService.saveMessage(request.getUserId(), request.getChatId(), request.getPrompt(), llmResponse);
-        return Response.ok(message).build();
-    }
-
-    // Alle Chats eines Benutzers abrufen
+    // Abruf aller Chats eines Benutzers (Liste auf der linken Seite)
     @GET
-    @Path("/user")
-    public Response getUserChats(@QueryParam("userId") Long userId) {
+    @Path("/user/{userId}")
+    public Response getUserChats(@PathParam("userId") Long userId) {
+
         List<Chat> chats = chatService.getChatsByUserId(userId);
         return Response.ok(chats).build();
     }
 
-    // Nachrichten eines spezifischen Chats abrufen
+    // Abruf aller Nachrichten eines spezifischen Chats
     @GET
     @Path("/{chatId}")
     public Response getChatMessages(@PathParam("chatId") Long chatId) {
-        List<ChatMessage> messages = chatService.getMessagesByChatId(chatId);
+        List<Chat> messages = chatService.getMessagesByChatId(chatId);
         return Response.ok(messages).build();
+    }
+
+    // Neuen Chat starten oder Nachricht in bestehenden Chat senden
+    @POST
+    @Path("/message")
+    public Response sendMessage(ChatRequest request) {
+        Chat chat = chatService.handleChatMessage(request.getUserId(), request.getChatId(), request.getPrompt());
+        return Response.ok(chat).build();
+    }
+
+    // Titel eines Chats ändern
+    @PUT
+    @Path("/{chatId}/title")
+    public Response updateChatTitle(@PathParam("chatId") Long chatId, @QueryParam("newTitle") String newTitle) {
+        Chat updatedChat = chatService.updateChatTitle(chatId, newTitle);
+        return Response.ok(updatedChat).build();
+    }
+
+    // Einen Chat löschen
+    @DELETE
+    @Path("/{chatId}")
+    public Response deleteChat(@PathParam("chatId") Long chatId) {
+        chatService.deleteChat(chatId);
+        return Response.ok("Chat gelöscht").build();
     }
 }

@@ -1,11 +1,24 @@
 import axios from 'axios';
+import {jwtDecode} from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8080/chat'; // Basis-URL für Chat-Endpoints
 
-// Alle Chats eines Benutzers abrufen
+// Hilfsfunktion zum Dekodieren des Tokens und Abrufen der Benutzer-ID
+const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
+    }
+    const decoded = jwtDecode(token);
+    return decoded.userId; // Angenommen, die Benutzer-ID ist als `userId` im Token enthalten
+};
+
+// Abruf aller Chats eines Benutzers
 export const getUserChats = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/user`, {
+        const userId = getUserIdFromToken();
+        console.error('ChatService - UserID:', userId);
+        const response = await axios.get(`${API_BASE_URL}/user/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         return response.data; // Liste der vom Benutzer erstellten Chats
@@ -14,8 +27,6 @@ export const getUserChats = async () => {
         throw error.response?.data || 'Fehler beim Abrufen der Benutzer-Chats.';
     }
 };
-
-
 
 // Nachrichten eines spezifischen Chats abrufen
 export const getChatMessages = async (chatId) => {
@@ -31,11 +42,12 @@ export const getChatMessages = async (chatId) => {
 };
 
 // Nachricht senden (für neuen oder bestehenden Chat)
-export const sendMessage = async (text, chatId) => {
+export const sendMessage = async (chatId, prompt) => {
     try {
+        const userId = getUserIdFromToken();
         const response = await axios.post(
-            API_BASE_URL,
-            { text, chatId }, // Text und optionale Chat-ID senden
+            `${API_BASE_URL}/message`,
+            { userId, chatId, prompt },
             {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             }
@@ -47,8 +59,40 @@ export const sendMessage = async (text, chatId) => {
     }
 };
 
+// Titel eines Chats ändern
+export const updateChatTitle = async (chatId, newTitle) => {
+    try {
+        const response = await axios.put(
+            `${API_BASE_URL}/${chatId}/title`,
+            null,
+            {
+                params: { newTitle },
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            }
+        );
+        return response.data; // Aktualisierte Chat-Daten
+    } catch (error) {
+        console.error(`Fehler beim Aktualisieren des Titels für Chat ${chatId}:`, error);
+        throw error.response?.data || 'Fehler beim Aktualisieren des Chat-Titels.';
+    }
+};
+
+// Chat löschen
+export const deleteChat = async (chatId) => {
+    try {
+        await axios.delete(`${API_BASE_URL}/${chatId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+    } catch (error) {
+        console.error(`Fehler beim Löschen des Chats ${chatId}:`, error);
+        throw error.response?.data || 'Fehler beim Löschen des Chats.';
+    }
+};
+
 export default {
     getUserChats,
     getChatMessages,
     sendMessage,
+    updateChatTitle,
+    deleteChat,
 };

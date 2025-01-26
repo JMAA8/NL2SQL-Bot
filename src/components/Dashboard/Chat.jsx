@@ -6,84 +6,128 @@ function Chat() {
     const [messages, setMessages] = useState([]); // Nachrichten im aktuellen Chat
     const [currentChatId, setCurrentChatId] = useState(null); // Aktiver Chat
     const [currentMessage, setCurrentMessage] = useState(''); // Nachricht im Eingabefeld
+    const [editingTitle, setEditingTitle] = useState(null); // Bearbeiteter Chat-Titel
+    const [newTitle, setNewTitle] = useState(''); // Neuer Titel
 
     useEffect(() => {
         const fetchUserChats = async () => {
             try {
-                const data = await chatService.getUserChats(); // Promise korrekt auflösen
-                setChats(data); // Chats setzen
+                const data = await chatService.getUserChats();
+                setChats(data);
             } catch (error) {
+                alert('Fehler beim Abrufen der Chats: ' + error);
                 console.error('Fehler beim Abrufen der Benutzer-Chats:', error);
             }
         };
 
-        // Promise korrekt behandeln
-        fetchUserChats().catch((error) => {
-            console.error('Unhandled promise rejection:', error);
-        });
+        fetchUserChats();
     }, []);
 
-
-    // Nachrichten eines spezifischen Chats laden
     const handleChatSelect = async (chatId) => {
         try {
             setCurrentChatId(chatId);
             const data = await chatService.getChatMessages(chatId);
             setMessages(data);
         } catch (error) {
-            console.error('Fehler beim Laden des Chatverlaufs:', error);
+            alert('Fehler beim Laden der Chat-Nachrichten: ' + error);
+            console.error('Fehler beim Laden der Chat-Nachrichten:', error);
         }
     };
 
-    // Neuer Chat starten
     const handleNewChat = () => {
-        setCurrentChatId(null); // Setze aktuelle Chat-ID zurück
-        setMessages([]); // Leere die Nachrichten
+        setCurrentChatId(null);
+        setMessages([]);
     };
 
-    // Nachricht senden
     const handleSendMessage = async () => {
-        if (!currentMessage.trim()) return;
+        if (!currentMessage.trim()) {
+            alert('Nachricht darf nicht leer sein!');
+            return;
+        }
 
         try {
-            const response = await chatService.sendMessage(currentMessage, currentChatId);
-            setMessages((prev) => [...prev, response]); // Nachricht zum Chat hinzufügen
-            setCurrentMessage(''); // Eingabefeld leeren
+            const response = await chatService.sendMessage(currentChatId, currentMessage);
+            setMessages((prev) => [...prev, response]);
+            setCurrentMessage('');
+
             if (!currentChatId) {
-                // Wenn ein neuer Chat erstellt wurde, aktualisiere die Chats-Liste
                 setCurrentChatId(response.chatId);
                 setChats((prev) => [...prev, { id: response.chatId, name: `Chat ${response.chatId}` }]);
             }
         } catch (error) {
+            alert('Fehler beim Senden der Nachricht: ' + error);
             console.error('Fehler beim Senden der Nachricht:', error);
+        }
+    };
+
+    const handleEditTitle = (chatId, title) => {
+        setEditingTitle(chatId);
+        setNewTitle(title);
+    };
+
+    const handleSaveTitle = async () => {
+        try {
+            await chatService.updateChatTitle(editingTitle, newTitle);
+            setChats((prev) => prev.map((chat) => (chat.id === editingTitle ? { ...chat, name: newTitle } : chat)));
+            setEditingTitle(null);
+            setNewTitle('');
+        } catch (error) {
+            alert('Fehler beim Aktualisieren des Titels: ' + error);
+            console.error('Fehler beim Aktualisieren des Titels:', error);
+        }
+    };
+
+    const handleDeleteChat = async (chatId) => {
+        if (!window.confirm('Möchten Sie diesen Chat wirklich löschen?')) return;
+
+        try {
+            await chatService.deleteChat(chatId);
+            setChats((prev) => prev.filter((chat) => chat.id !== chatId));
+
+            if (currentChatId === chatId) {
+                handleNewChat();
+            }
+        } catch (error) {
+            alert('Fehler beim Löschen des Chats: ' + error);
+            console.error('Fehler beim Löschen des Chats:', error);
         }
     };
 
     return (
         <div style={styles.container}>
-            {/* Seitenleiste mit Chats */}
             <div style={styles.sidebar}>
                 <h3>Alte Chats</h3>
-                <button onClick={handleNewChat} style={styles.newChatButton}>
-                    Neuer Chat
-                </button>
+                <button onClick={handleNewChat} style={styles.newChatButton}>Neuer Chat</button>
                 <ul style={styles.chatList}>
                     {chats.map((chat) => (
                         <li
                             key={chat.id}
-                            onClick={() => handleChatSelect(chat.id)}
                             style={{
                                 ...styles.chatItem,
                                 backgroundColor: currentChatId === chat.id ? '#ddd' : 'transparent',
                             }}
                         >
-                            {chat.name}
+                            {editingTitle === chat.id ? (
+                                <div style={styles.editContainer}>
+                                    <input
+                                        type="text"
+                                        value={newTitle}
+                                        onChange={(e) => setNewTitle(e.target.value)}
+                                    />
+                                    <button onClick={handleSaveTitle}>Speichern</button>
+                                    <button onClick={() => setEditingTitle(null)}>Abbrechen</button>
+                                </div>
+                            ) : (
+                                <div style={styles.chatRow}>
+                                    <span onClick={() => handleChatSelect(chat.id)}>{chat.name}</span>
+                                    <button onClick={() => handleEditTitle(chat.id, chat.name)}>Bearbeiten</button>
+                                    <button onClick={() => handleDeleteChat(chat.id)}>Löschen</button>
+                                </div>
+                            )}
                         </li>
                     ))}
                 </ul>
             </div>
-
-            {/* Chatfenster */}
             <div style={styles.chatWindow}>
                 <h3>{currentChatId ? `Chat ${currentChatId}` : 'Neuer Chat'}</h3>
                 <div style={styles.messages}>
@@ -101,9 +145,7 @@ function Chat() {
                         placeholder="Nachricht schreiben..."
                         style={styles.input}
                     />
-                    <button onClick={handleSendMessage} style={styles.button}>
-                        Senden
-                    </button>
+                    <button onClick={handleSendMessage} style={styles.button}>Senden</button>
                 </div>
             </div>
         </div>
@@ -139,6 +181,15 @@ const styles = {
         padding: '10px',
         cursor: 'pointer',
         borderBottom: '1px solid #ccc',
+    },
+    chatRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    editContainer: {
+        display: 'flex',
+        gap: '5px',
     },
     chatWindow: {
         flex: 1,
