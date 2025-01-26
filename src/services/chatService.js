@@ -45,6 +45,7 @@ export const getChatMessages = async (chatId) => {
 export const sendMessage = async (chatId, prompt) => {
     try {
         const userId = getUserIdFromToken();
+        console.log('Sende Daten:', { userId, chatId, prompt });
         const response = await axios.post(
             `${API_BASE_URL}/message`,
             { userId, chatId, prompt },
