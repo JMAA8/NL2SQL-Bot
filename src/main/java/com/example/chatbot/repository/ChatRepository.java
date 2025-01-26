@@ -1,7 +1,7 @@
 package com.example.chatbot.repository;
 
-import com.example.chatbot.entity.Chat;
-import com.example.chatbot.entity.ChatMessage;
+import com.example.chatbot.entityMongoDB.Chat;
+import com.example.chatbot.entityMongoDB.ChatMessage;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
@@ -15,7 +15,7 @@ public class ChatRepository implements PanacheMongoRepository<Chat> {
         return list("userId", userId);
     }
 
-    public Chat findByChatId(Long chatId) {
+    public Chat findByChatId(String chatId) {
         return find("chatId", chatId).firstResult();
     }
 
@@ -24,6 +24,6 @@ public class ChatRepository implements PanacheMongoRepository<Chat> {
     }
 
     public void persistMessage(ChatMessage message) {
-        getEntityManager().persist(message);
+        message.persist();;
     }
 }

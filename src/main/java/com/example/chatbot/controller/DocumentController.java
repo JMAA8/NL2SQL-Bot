@@ -1,6 +1,6 @@
 package com.example.chatbot.controller;
 
-import com.example.chatbot.entity.Document;
+import com.example.chatbot.entityMongoDB.Document;
 import com.example.chatbot.service.DocumentService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;

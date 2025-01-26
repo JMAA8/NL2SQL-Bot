@@ -1,7 +1,7 @@
 package com.example.chatbot.service;
 
-import com.example.chatbot.entity.Chat;
-import com.example.chatbot.entity.ChatMessage;
+import com.example.chatbot.entityMongoDB.Chat;
+import com.example.chatbot.entityMongoDB.ChatMessage;
 import com.example.chatbot.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,14 +17,22 @@ public class ChatService {
 
     // Nachricht speichern und Chat verwalten
     @Transactional
-    public Chat handleChatMessage(Long userId, Long chatId, String prompt) {
+    public Chat handleChatMessage(Long userId, String chatId, String prompt) {
         Chat chat = (chatId != null) ? chatRepository.findByChatId(chatId) : null;
+        System.out.println("chatService chatId: " + chatId);
+        System.out.println("chatService Prompt: " + prompt);
         try {
-        if (chat == null) {
+        if (chatId == null) {
+            System.out.println("chatService - if - ChatId: ");
             chat = new Chat();
+            System.out.println("neuer Chat wird erstellt");
             chat.setUserId(userId);
+            System.out.println("neuer Chat userId: " + chat.getUserId());
             chat.setTitle(prompt.split(" ")[0]); // Erstes Wort als Titel
+            System.out.println("neuer Chat Titel: " + chat.getTitle());
+
             chatRepository.persist(chat);
+            System.out.println("chatService - gesetzte ChatId: " + chat.getChatId());
 
         }
         } catch (Exception e) {
@@ -41,7 +49,7 @@ public class ChatService {
 
     // Titel eines Chats aktualisieren
     @Transactional
-    public Chat updateChatTitle(Long chatId, String newTitle) {
+    public Chat updateChatTitle(String chatId, String newTitle) {
         Chat chat = chatRepository.findByChatId(chatId);
         if (chat != null) {
             chat.setTitle(newTitle);
@@ -52,7 +60,7 @@ public class ChatService {
 
     // Chat löschen
     @Transactional
-    public void deleteChat(Long chatId) {
+    public void deleteChat(String chatId) {
         Chat chat = chatRepository.findByChatId(chatId);
         if (chat != null) {
             chatRepository.delete(chat);

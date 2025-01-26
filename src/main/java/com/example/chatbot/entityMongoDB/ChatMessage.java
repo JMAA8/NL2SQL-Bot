@@ -1,4 +1,4 @@
-package com.example.chatbot.entity;
+package com.example.chatbot.entityMongoDB;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @MongoEntity(collection = "Chat")
 public class ChatMessage extends PanacheMongoEntity {
-    private Long chatId;
+    private String chatId;
     private Long userId;
     private String prompt;
     private String response;
@@ -17,7 +17,7 @@ public class ChatMessage extends PanacheMongoEntity {
         // Default-Konstruktor
     }
 
-    public ChatMessage(Long chatId, Long userId, String prompt, String response) {
+    public ChatMessage(String chatId, Long userId, String prompt, String response) {
         this.chatId = chatId;
         this.userId = userId;
         this.prompt = prompt;
@@ -26,11 +26,11 @@ public class ChatMessage extends PanacheMongoEntity {
     }
 
     // Getter und Setter
-    public Long getChatId() {
+    public String getChatId() {
         return chatId;
     }
 
-    public void setChatId(Long chatId) {
+    public void setChatId(String chatId) {
         this.chatId = chatId;
     }
 

@@ -1,7 +1,6 @@
 package com.example.chatbot.chat;
 
-import com.example.chatbot.entity.Chat;
-import com.example.chatbot.entity.ChatMessage;
+import com.example.chatbot.entityMongoDB.Chat;
 import com.example.chatbot.llm.LLMService;
 import com.example.chatbot.service.ChatService;
 import jakarta.inject.Inject;
@@ -42,14 +41,16 @@ public class ChatController {
     @POST
     @Path("/message")
     public Response sendMessage(ChatRequest request) {
+        System.out.println("Chat Controller - /message - Request: " + request);
         Chat chat = chatService.handleChatMessage(request.getUserId(), request.getChatId(), request.getPrompt());
+        System.out.println("Chat Controller - /message - Chat: " + chat);
         return Response.ok(chat).build();
     }
 
     // Titel eines Chats ändern
     @PUT
     @Path("/{chatId}/title")
-    public Response updateChatTitle(@PathParam("chatId") Long chatId, @QueryParam("newTitle") String newTitle) {
+    public Response updateChatTitle(@PathParam("chatId") String chatId, @QueryParam("newTitle") String newTitle) {
         Chat updatedChat = chatService.updateChatTitle(chatId, newTitle);
         return Response.ok(updatedChat).build();
     }
@@ -57,7 +58,7 @@ public class ChatController {
     // Einen Chat löschen
     @DELETE
     @Path("/{chatId}")
-    public Response deleteChat(@PathParam("chatId") Long chatId) {
+    public Response deleteChat(@PathParam("chatId") String chatId) {
         chatService.deleteChat(chatId);
         return Response.ok("Chat gelöscht").build();
     }

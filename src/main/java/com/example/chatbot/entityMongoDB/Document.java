@@ -1,4 +1,4 @@
-package com.example.chatbot.entity;
+package com.example.chatbot.entityMongoDB;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;

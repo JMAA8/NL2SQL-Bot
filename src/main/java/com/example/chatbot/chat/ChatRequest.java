@@ -5,7 +5,7 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 @MongoEntity(collection = "Chat")
 public class ChatRequest {
     private Long userId; // Benutzer-ID
-    private Long chatId; // Chat-ID (optional, für bestehende Chats)
+    private String chatId; // Chat-ID (optional, für bestehende Chats)
     private String prompt;
 
     // Getter und Setter
@@ -18,11 +18,11 @@ public class ChatRequest {
         this.userId = userId;
     }
 
-    public Long getChatId() {
+    public String getChatId() {
         return chatId;
     }
 
-    public void setChatId(Long chatId) {
+    public void setChatId(String chatId) {
 
         this.chatId = chatId;
     }

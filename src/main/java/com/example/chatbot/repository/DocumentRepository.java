@@ -1,6 +1,6 @@
 package com.example.chatbot.repository;
 
-import com.example.chatbot.entity.Document;
+import com.example.chatbot.entityMongoDB.Document;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

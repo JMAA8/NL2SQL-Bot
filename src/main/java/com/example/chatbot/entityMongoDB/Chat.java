@@ -1,28 +1,34 @@
-package com.example.chatbot.entity;
+package com.example.chatbot.entityMongoDB;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import jakarta.persistence.PrePersist;
 
 import java.time.LocalDateTime;
 
 @MongoEntity(collection = "Chat")
 public class Chat extends PanacheMongoEntity {
-    private Long chatId; // Chat ID
+    private String chatId; // Chat ID
     private Long userId;
     private String title; // Optional: Titel des Chats
     private List<ChatMessage> messages = new ArrayList<>();
     private LocalDateTime createdAt; // Zeitpunkt der Chat-Erstellung
 
-    // Getter und Setter
-    public Long getChatId() {
-        return chatId;
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now(); // Setzt automatisch die aktuelle Zeit
+        }
     }
 
-    public void setChatId(Long chatId) {
-        this.chatId = chatId;
+    // Getter und Setter
+    public String getChatId() {
+        return id.toString();
     }
+
 
     public Long getUserId() {
         return userId;

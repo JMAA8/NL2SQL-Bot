@@ -58,6 +58,7 @@ export const sendMessage = async (chatId, prompt) => {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             }
         );
+        console.log('sendMessage - Backendversuch erfolgreich');
         return response.data; // Neue Nachricht und ggf. Chat-Details (z. B. neue chatId)
     } catch (error) {
         console.error('Fehler beim Senden der Nachricht:', error);
