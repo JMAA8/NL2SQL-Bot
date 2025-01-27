@@ -17,7 +17,9 @@ const LandingPage = () => {
                 Registrieren
             </button>
         </div>
-    </div>*/
+    </div>
+
+         */
         <div
             style={{
                 display: 'flex',
