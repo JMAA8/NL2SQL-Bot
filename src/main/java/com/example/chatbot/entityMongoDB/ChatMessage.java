@@ -5,13 +5,13 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 
 import java.time.LocalDateTime;
 
-@MongoEntity(collection = "Chat")
+@MongoEntity(collection = "ChatMessage")
 public class ChatMessage extends PanacheMongoEntity {
-    private String chatId;
+    private String chatId; // Manuelle Verknüpfung zur Chat-Entität
     private Long userId;
     private String prompt;
     private String response;
-    private LocalDateTime timestamp; // Zeitpunkt der Nachrichtenerstellung
+    private LocalDateTime timestamp;
 
     public ChatMessage() {
         // Default-Konstruktor

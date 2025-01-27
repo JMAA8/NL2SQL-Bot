@@ -46,10 +46,7 @@ export const getChatMessages = async (chatId) => {
 // Nachricht senden (für neuen oder bestehenden Chat)
 
 export const sendMessage = async (chatId, prompt) => {
-  /*  if (!chatId || !prompt) {
-     console.error('Chat-ID oder Prompt fehlen.');
-     return;
-    }*/
+
     try {
         const userId = getUserIdFromToken();
         console.log('Sende Daten:', { userId, chatId, prompt });

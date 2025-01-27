@@ -11,16 +11,18 @@ import java.time.LocalDateTime;
 
 @MongoEntity(collection = "Chat")
 public class Chat extends PanacheMongoEntity {
-    private String chatId; // Chat ID
+    private String chatId;
     private Long userId;
-    private String title; // Optional: Titel des Chats
+    private String title;
     private List<ChatMessage> messages = new ArrayList<>();
-    private LocalDateTime createdAt; // Zeitpunkt der Chat-Erstellung
+    private LocalDateTime createdAt;
+
+
 
     @PrePersist
     public void prePersist() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now(); // Setzt automatisch die aktuelle Zeit
+            this.createdAt = LocalDateTime.now();
         }
     }
 
@@ -28,7 +30,6 @@ public class Chat extends PanacheMongoEntity {
     public String getChatId() {
         return id.toString();
     }
-
 
     public Long getUserId() {
         return userId;

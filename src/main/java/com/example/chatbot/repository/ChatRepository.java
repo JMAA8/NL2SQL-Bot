@@ -1,29 +1,36 @@
 package com.example.chatbot.repository;
 
 import com.example.chatbot.entityMongoDB.Chat;
-import com.example.chatbot.entityMongoDB.ChatMessage;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.List;
-import static io.quarkus.hibernate.orm.panache.Panache.getEntityManager;
 
+import java.util.List;
 
 @ApplicationScoped
 public class ChatRepository implements PanacheMongoRepository<Chat> {
 
+    // Alle Chats eines Benutzers basierend auf der User-ID abrufen
     public List<Chat> findByUserId(Long userId) {
         return list("userId", userId);
     }
 
+    // Einen bestimmten Chat basierend auf der Chat-ID abrufen
     public Chat findByChatId(String chatId) {
         return find("chatId", chatId).firstResult();
     }
 
-    public List<Chat> findMessagesByChatId(Long chatId) {
-        return list("chatId", chatId);
+    // Einen neuen Chat speichern
+    public void persistChat(Chat chat) {
+        persist(chat);
     }
 
-    public void persistMessage(ChatMessage message) {
-        message.persist();;
+    // Bestehenden Chat aktualisieren
+    public void updateChat(Chat chat) {
+        update(chat);
+    }
+
+    // Chat löschen
+    public void deleteChat(Chat chat) {
+        delete(chat);
     }
 }

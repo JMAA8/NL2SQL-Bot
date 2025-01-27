@@ -1,6 +1,7 @@
 package com.example.chatbot.chat;
 
 import com.example.chatbot.entityMongoDB.Chat;
+import com.example.chatbot.entityMongoDB.ChatMessage;
 import com.example.chatbot.llm.LLMService;
 import com.example.chatbot.service.ChatService;
 import jakarta.inject.Inject;
@@ -34,8 +35,8 @@ public class ChatController {
     // Abruf aller Nachrichten eines spezifischen Chats
     @GET
     @Path("/{chatId}")
-    public Response getChatMessages(@PathParam("chatId") Long chatId) {
-        List<Chat> messages = chatService.getMessagesByChatId(chatId);
+    public Response getChatMessages(@PathParam("chatId") String chatId) {
+        List<ChatMessage> messages = chatService.getMessagesByChatId(chatId);
         return Response.ok(messages).build();
     }
 
@@ -45,7 +46,7 @@ public class ChatController {
     public Response sendMessage(ChatRequest request) {
         System.out.println("Chat Controller - /message - Request: " + request);
         Chat chat = chatService.handleChatMessage(request.getUserId(), request.getChatId(), request.getPrompt());
-        System.out.println("Chat Controller - /message - Chat: " + chat);
+        System.out.println("Chat Controller - /message - Chat: " + chat.getChatId());
         return Response.ok(chat).build();
     }
 
