@@ -36,22 +36,47 @@ function Chat() {
 
 
     const handleChatSelect = async (chatId) => {
+        console.log(`handleChatSelect wird aufgerufen für Chat-ID: ${chatId}`);
+
+        // Überprüfen, ob chatId gültig ist
+        if (!chatId) {
+            console.error('Ungültige Chat-ID:', chatId);
+            return;
+        }
+
         try {
             setCurrentChatId(chatId);
-            const data = await chatService.getChatMessages(chatId);
+            console.log(`Aktueller Chat wird gesetzt: ${chatId}`);
 
-            // Hier die Struktur für prompt und response anpassen
+            // Abrufen der Nachrichten
+            const data = await chatService.getChatMessages(chatId);
+            console.log('Nachrichten erfolgreich abgerufen:', data);
+
+            // Überprüfen, ob die Daten gültig sind
+            if (!data || !Array.isArray(data)) {
+                console.error('Unerwartetes Format der Nachrichten:', data);
+                return;
+            }
+
+            // Nachrichten formatieren
             const formattedMessages = data.flatMap((message) => [
                 { sender: 'User', text: message.prompt },
                 { sender: 'Bot', text: message.response },
             ]);
+            console.log('Formatierte Nachrichten:', formattedMessages);
 
-            setMessages(formattedMessages);
+            // Nachrichten im State speichern
+            if (formattedMessages.length > 0) {
+                setMessages(formattedMessages);
+            } else {
+                console.log('Keine Nachrichten gefunden.');
+            }
         } catch (error) {
-            alert('Fehler beim Laden der Chat-Nachrichten: ' + error);
+            alert(`Fehler beim Laden der Chat-Nachrichten: ${error.message || error}`);
             console.error('Fehler beim Laden der Chat-Nachrichten:', error);
         }
     };
+
 
     const handleNewChat = () => {
         setCurrentChatId(null);
@@ -164,6 +189,7 @@ function Chat() {
                                     {/* Titel anzeigen und `handleChatSelect` hinzufügen */}
                                     <span
                                         onClick={() => handleChatSelect(chat.id)}
+                                        //onClick={() => console.log(`Chat ${chat.id} wurde ausgewählt`)}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         {chat.title || `Chat ${chat.id}`} {/* Fallback-Titel */}
