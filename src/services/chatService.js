@@ -17,10 +17,12 @@ const getUserIdFromToken = () => {
 export const getUserChats = async () => {
     try {
         const userId = getUserIdFromToken();
-       console.error('ChatService - UserID:', userId);
+       console.log('ChatService -getUserChats - UserID:', userId);
         const response = await axios.get(`${API_BASE_URL}/user/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
+        console.log('ChatService - getUserChats - Nach Controller aufruf');
+        console.log('ChatService - getUserChats - Response: ', response.data);
         return response.data; // Liste der vom Benutzer erstellten Chats
     } catch (error) {
         console.error('Fehler beim Abrufen der Benutzer-Chats:', error);
@@ -59,6 +61,7 @@ export const sendMessage = async (chatId, prompt) => {
             }
         );
         console.log('sendMessage - Backendversuch erfolgreich');
+        console.log('sendMessage - responsedata: ', response.data)
         return response.data; // Neue Nachricht und ggf. Chat-Details (z. B. neue chatId)
     } catch (error) {
         console.error('Fehler beim Senden der Nachricht:', error);
@@ -68,21 +71,27 @@ export const sendMessage = async (chatId, prompt) => {
 
 // Titel eines Chats ändern
 export const updateChatTitle = async (chatId, newTitle) => {
+    console.log('ChatService - updateChatTitle - chatId: ', chatId);
+    console.log('ChatService - updateChatTitle - newTitle: ', newTitle);
     try {
         const response = await axios.put(
             `${API_BASE_URL}/${chatId}/title`,
-            null,
+            { newTitle }, // Neuer Titel als JSON-Body
             {
-                params: { newTitle },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json', // Content-Type angeben
+                },
             }
         );
+        console.log('chatService - updateChatTitle - Response: ', response.data);
         return response.data; // Aktualisierte Chat-Daten
     } catch (error) {
         console.error(`Fehler beim Aktualisieren des Titels für Chat ${chatId}:`, error);
         throw error.response?.data || 'Fehler beim Aktualisieren des Chat-Titels.';
     }
 };
+
 
 // Chat löschen
 export const deleteChat = async (chatId) => {

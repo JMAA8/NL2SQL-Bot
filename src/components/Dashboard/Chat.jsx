@@ -9,30 +9,43 @@ function Chat() {
     const [editingTitle, setEditingTitle] = useState(null); // Bearbeiteter Chat-Titel
     const [newTitle, setNewTitle] = useState(''); // Neuer Titel
 
-    useEffect(() => {
-        const fetchUserChats = async () => {
-            try {
-                const data = await chatService.getUserChats();
-                setChats(data);
-            } catch (error) {
-                alert('Fehler beim Abrufen der Chats: ' + error);
-                console.error('Fehler beim Abrufen der Benutzer-Chats:', error);
-            }
-        };
 
+    const fetchUserChats = async () => {
+        try {
+            const data = await chatService.getUserChats(); // Abruf aller Benutzer-Chats
+            const formattedChats = data.map((chat) => ({
+                id: chat.chatId,
+                title: chat.title || `Chat ${chat.chatId}`, // Fallback-Titel, falls kein Titel vorhanden ist
+            }));
+            setChats(formattedChats); // Chats in den State setzen
+        } catch (error) {
+            alert('Fehler beim Abrufen der Chats: ' + error);
+            console.error('Fehler beim Abrufen der Benutzer-Chats:', error);
+        }
+    };
+    useEffect(() => {
         fetchUserChats();
     }, []);
+
 
     const handleChatSelect = async (chatId) => {
         try {
             setCurrentChatId(chatId);
             const data = await chatService.getChatMessages(chatId);
-            setMessages(data);
+
+            // Hier die Struktur für prompt und response anpassen
+            const formattedMessages = data.flatMap((message) => [
+                { sender: 'User', text: message.prompt },
+                { sender: 'Bot', text: message.response },
+            ]);
+
+            setMessages(formattedMessages);
         } catch (error) {
             alert('Fehler beim Laden der Chat-Nachrichten: ' + error);
             console.error('Fehler beim Laden der Chat-Nachrichten:', error);
         }
     };
+
 
     const handleNewChat = () => {
         setCurrentChatId(null);
@@ -44,16 +57,26 @@ function Chat() {
             alert('Nachricht darf nicht leer sein!');
             return;
         }
-        // Debugging: Ausgabe von currentChatId vor dem Senden
-       // console.log('Aktuelle Chat-ID vor dem Senden:', currentChatId);//
+
         try {
             const response = await chatService.sendMessage(currentChatId, currentMessage);
-            setMessages((prev) => [...prev, response]);
+
+            // Nachricht strukturieren und hinzufügen
+            const newMessages = response.messages.flatMap((messages) => [
+                { sender: 'User', text: messages.prompt }, // Das gesendete Prompt
+                { sender: 'Bot', text: messages.response }, // Die Antwort des Bots
+            ]);
+
+            setMessages((prev) => [...prev, ...newMessages]);
+            console.log('newMessages: ', newMessages);
+            console.log('setMessages', messages);
             setCurrentMessage('');
 
             if (!currentChatId) {
+                console.log('Id + prompt: ', response.chatId, response.prompt)
                 setCurrentChatId(response.chatId);
-                setChats((prev) => [...prev, { id: response.chatId, name: `Chat ${response.chatId}` }]);
+                setChats((prev) => [...prev, { id: response.chatId, name: `Chat ${response.title}` }]);
+                setNewTitle(response.title);
             }
         } catch (error) {
             alert('Fehler beim Senden der Nachricht: ' + error);
@@ -69,7 +92,9 @@ function Chat() {
     const handleSaveTitle = async () => {
         try {
             await chatService.updateChatTitle(editingTitle, newTitle);
+            console.log('Chat - handleSaveTitle - nach ausführen von ChatService')
             setChats((prev) => prev.map((chat) => (chat.id === editingTitle ? { ...chat, name: newTitle } : chat)));
+            await fetchUserChats();
             setEditingTitle(null);
             setNewTitle('');
         } catch (error) {
@@ -120,8 +145,14 @@ function Chat() {
                                 </div>
                             ) : (
                                 <div style={styles.chatRow}>
-                                    <span onClick={() => handleChatSelect(chat.id)}>{chat.name}</span>
-                                    <button onClick={() => handleEditTitle(chat.id, chat.name)}>Bearbeiten</button>
+                                    {/* Titel anzeigen und `handleChatSelect` hinzufügen */}
+                                    <span
+                                        onClick={() => handleChatSelect(chat.id)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                {chat.title || `Chat ${chat.id}`} {/* Fallback-Titel */}
+                            </span>
+                                    <button onClick={() => handleEditTitle(chat.id, chat.title)}>Bearbeiten</button>
                                     <button onClick={() => handleDeleteChat(chat.id)}>Löschen</button>
                                 </div>
                             )}
@@ -129,8 +160,9 @@ function Chat() {
                     ))}
                 </ul>
             </div>
+
             <div style={styles.chatWindow}>
-                <h3>{currentChatId ? `Chat ${currentChatId}` : 'Neuer Chat'}</h3>
+                <h3>{currentChatId ? `Chat ${newTitle}` : 'Neuer Chat'}</h3>
                 <div style={styles.messages}>
                     {messages.map((message, index) => (
                         <div key={index} style={styles.message}>
