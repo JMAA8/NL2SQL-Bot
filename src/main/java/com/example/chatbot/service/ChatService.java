@@ -45,10 +45,10 @@ public class ChatService {
             chatMessageRepository.persistMessage(message);
             System.out.println("Nachricht gespeichert mit ChatId: " + message.getChatId());
 
-            // Manuelles Verknüpfen der Nachricht mit dem Chat
+            // Nachrichten abrufen und direkt setzen
             List<ChatMessage> messages = chatMessageRepository.findMessagesByChatId(chat.getChatId());
-            messages.add(message);
             chat.setMessages(messages);
+
 
             // Chat aktualisieren
             chatRepository.update(chat);
