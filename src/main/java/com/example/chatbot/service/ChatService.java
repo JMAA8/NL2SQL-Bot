@@ -7,6 +7,9 @@ import com.example.chatbot.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import com.example.chatbot.llm.LLMService;
+
+
 
 import java.util.List;
 
@@ -19,6 +22,8 @@ public class ChatService {
     @Inject
     ChatMessageRepository chatMessageRepository;
 
+    @Inject
+    LLMService llmService;
     // Nachricht speichern und Chat verwalten
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
@@ -37,8 +42,13 @@ public class ChatService {
                 System.out.println("Neuer Chat erstellt mit ID: " + chat.getChatId());
             }
 
+            // Verbindung zum LLM herstellen und Antwort abrufen
+            System.out.println("ChatService - Verbindung zum LLM herstellen");
+            String llmResponse = llmService.getResponse(prompt);
+            System.out.println("Antwort vom LLM erhalten: " + llmResponse);
+
             // Nachricht erstellen
-            ChatMessage message = new ChatMessage(chat.getChatId(), userId, prompt, "Antwort von LLM"); // Dummy-Antwort
+            ChatMessage message = new ChatMessage(chat.getChatId(), userId, prompt, llmResponse);
             System.out.println("ChatService - handleChatMessage - Nachricht wird erstellt");
 
             // Nachricht speichern
@@ -48,7 +58,6 @@ public class ChatService {
             // Nachrichten abrufen und direkt setzen
             List<ChatMessage> messages = chatMessageRepository.findMessagesByChatId(chat.getChatId());
             chat.setMessages(messages);
-
 
             // Chat aktualisieren
             chatRepository.update(chat);
@@ -60,6 +69,7 @@ public class ChatService {
 
         return chat;
     }
+
 
 
     // Titel eines Chats aktualisieren
@@ -76,9 +86,23 @@ public class ChatService {
     // Chat löschen
     @Transactional
     public void deleteChat(String chatId) {
+        // Den Chat anhand der Chat-ID abrufen
         Chat chat = chatRepository.findByChatId(chatId);
+
         if (chat != null) {
+            // Alle Nachrichten mit der entsprechenden Chat-ID abrufen
+            List<ChatMessage> messages = chatMessageRepository.findMessagesByChatId(chatId);
+
+            // Alle Nachrichten löschen
+            for (ChatMessage message : messages) {
+                chatMessageRepository.delete(message);
+            }
+
+            // Den Chat selbst löschen
             chatRepository.delete(chat);
+            System.out.println("Chat und zugehörige Nachrichten wurden gelöscht: " + chatId);
+        } else {
+            System.out.println("Kein Chat mit der ID " + chatId + " gefunden.");
         }
     }
 

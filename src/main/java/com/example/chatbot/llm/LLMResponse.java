@@ -1,9 +1,11 @@
 package com.example.chatbot.llm;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LLMResponse {
-
     private List<Choice> choices;
 
     public List<Choice> getChoices() {
@@ -14,15 +16,49 @@ public class LLMResponse {
         this.choices = choices;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Choice {
-        private String text;
+        private int index;
+        private Message message;
 
-        public String getText() {
-            return text;
+        public int getIndex() {
+            return index;
         }
 
-        public void setText(String text) {
-            this.text = text;
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+        public Message getMessage() {
+            return message;
+        }
+
+        public void setMessage(Message message) {
+            this.message = message;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Message {
+        private String role;
+        private String content;
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public void setContent(String content) {
+            this.content = content;
         }
     }
 }
+
+
