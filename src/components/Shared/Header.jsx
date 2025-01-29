@@ -1,4 +1,5 @@
 import React from 'react';
+import {jwtDecode} from 'jwt-decode';
 import { Link, useNavigate } from 'react-router-dom';
 
 function Header() {
@@ -6,8 +7,27 @@ function Header() {
     const token = localStorage.getItem('token');
 
     const handleLogout = () => {
-        localStorage.removeItem('token'); // Entferne das Token aus dem lokalen Speicher
+        localStorage.removeItem('token'); // Token löschen
+        localStorage.removeItem('role');  // Rolle löschen
         navigate('/login'); // Weiterleitung zur Login-Seite
+    };
+
+    const handleProfileClick = () => {
+
+        //Role aus Token extrahieren
+        const decoded = jwtDecode(token);
+        const role = decoded.groups?.[0];
+        console.log('Aktuelle Rolle: ', role)
+
+        if (role === 'ADMIN') {
+            navigate('/admin');
+        } else if (role === 'ADVANCED_USER') {
+            navigate('/advanced-user');
+        } else if (role === 'BASIC_USER') {
+            navigate('/basic-user');
+        } else {
+            alert('Ungültige Rolle oder nicht angemeldet.');
+        }
     };
 
     return (
@@ -19,13 +39,15 @@ function Header() {
                     </Link>
                 </h1>
                 <nav style={styles.nav}>
-                    <Link to="/profile" style={styles.link}>
-                        Profil
-                    </Link>
+                    {token && ( // Profil-Link nur anzeigen, wenn ein Token vorhanden ist
+                        <button onClick={handleProfileClick} style={styles.linkButton}>
+                            Profil
+                        </button>
+                    )}
                     <Link to="/help" style={styles.link}>
                         Hilfe
                     </Link>
-                    {token && ( // Nur anzeigen, wenn ein Token vorhanden ist
+                    {token && ( // Logout-Button nur anzeigen, wenn ein Token vorhanden ist
                         <button onClick={handleLogout} style={styles.logoutButton}>
                             Logout
                         </button>
@@ -71,6 +93,14 @@ const styles = {
         color: '#fff',
         textDecoration: 'none',
         fontSize: '16px',
+    },
+    linkButton: {
+        background: 'none',
+        border: 'none',
+        color: '#fff',
+        fontSize: '16px',
+        cursor: 'pointer',
+        textDecoration: 'underline',
     },
     logoutButton: {
         backgroundColor: '#ff4d4d',

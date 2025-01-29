@@ -43,7 +43,7 @@ function App() {
                                 <BasicUserDashboard />
                             </ProtectedRoute>
                         }
-                    />{/* Fallback für nicht existierende Routen */}
+                    />
                     <Route path="/chat" element={<Chat />} />
                     <Route path="*" element={<div>404 - Seite nicht gefunden</div>} />
                 </Routes>
