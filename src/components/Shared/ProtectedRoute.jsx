@@ -20,8 +20,13 @@ function ProtectedRoute({ role, children }) {
     console.log('ProtectedRoute: UserRole:', userRole);
     console.log('ProtectedRoute: Erwartete Rolle:', role);
 
-    if (!token || userRole !== role) {
-        console.log('ProtectedRoute: Zugriff verweigert');
+    if (!token) {
+        return <Navigate to="/login" />;
+        console.log('ProtectedRout: Zugriff verweigert (Kein Token)')
+    }
+
+    if (role && userRole !== role) {
+        console.log('ProtectedRoute: Zugriff verweigert (Keine Rolle)');
         return <Navigate to="/login" />;
     }
     return children;

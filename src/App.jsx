@@ -44,7 +44,14 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-                    <Route path="/chat" element={<Chat />} />
+                    <Route
+                        path="/chat"
+                        element={
+                            <ProtectedRoute>
+                                 <Chat />
+                            </ProtectedRoute>
+                        }
+                    />
                     <Route path="*" element={<div>404 - Seite nicht gefunden</div>} />
                 </Routes>
             </main>
