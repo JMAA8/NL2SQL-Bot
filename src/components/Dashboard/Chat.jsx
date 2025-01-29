@@ -170,8 +170,32 @@ function Chat() {
                                         value={newTitle}
                                         onChange={(e) => setNewTitle(e.target.value)}
                                     />
-                                    <button onClick={handleSaveTitle}>Speichern</button>
-                                    <button onClick={() => setEditingTitle(null)}>Abbrechen</button>
+                                    <button onClick={handleSaveTitle} style={{
+                                        padding: '8px 14px',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                        backgroundColor: '#6fb873',
+                                        color: '#fff',
+                                        transition: 'background-color 0.2s ease-in-out',}}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6fb873'}
+                                    >Speichern</button>
+                                    <button onClick={() => setEditingTitle(null)} style={{
+                                        padding: '8px 14px',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                        backgroundColor: '#ca7e7e',
+                                        color: '#fff',
+                                        transition: 'background-color 0.2s ease-in-out',}}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#a04545'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ca7e7e'}
+                                    >Abbrechen</button>
                                 </div>
                             ) : (
                                 <div style={styles.chatRow}>
@@ -183,8 +207,43 @@ function Chat() {
                                     >
                                         {chat.title || `Chat ${chat.id}`} {/* Fallback-Titel */}
                                     </span>
-                                    <button onClick={() => handleEditTitle(chat.id, chat.title)}>Bearbeiten</button>
-                                    <button onClick={() => handleDeleteChat(chat.id)}>Löschen</button>
+                                    <button
+                                        onClick={() => handleEditTitle(chat.id, chat.title)}
+                                        style={{
+                                            padding: '8px 14px',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            backgroundColor: '#6fb873',
+                                            color: '#fff',
+                                            transition: 'background-color 0.2s ease-in-out',
+
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6fb873'}
+                                    >
+                                        ✏️ Bearbeiten
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteChat(chat.id)}
+                                        style={{
+                                            padding: '8px 14px',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            backgroundColor: '#ca7e7e',
+                                            color: '#fff',
+                                            transition: 'background-color 0.2s ease-in-out',
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#a04545'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ca7e7e'}
+                                    >
+                                        🗑️ Löschen
+                                    </button>
                                 </div>
                             )}
                         </li>
@@ -219,7 +278,7 @@ function Chat() {
 const styles = {
     container: {
         display: 'flex',
-        height: '100vh',
+        height: '75vh',
     },
     sidebar: {
         width: '25%',
@@ -240,12 +299,22 @@ const styles = {
     chatList: {
         listStyleType: 'none',
         padding: 0,
+        margin: 0,
     },
     chatItem: {
         padding: '10px',
         cursor: 'pointer',
-        borderBottom: '1px solid #ccc',
+        borderBottom: '1px solid #ddd',
+        border: '1px solid #e0e0e0',
+        borderRadius: '12px',
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        marginBottom: '10px',
+
     },
+
     chatRow: {
         display: 'flex',
         justifyContent: 'space-between',
@@ -266,6 +335,13 @@ const styles = {
         flex: 1,
         overflowY: 'auto',
         marginBottom: '10px',
+        padding: '10px',
+        borderRadius: '8px',
+        backgroundColor: '#f9f9f9',
+        color: '#333',
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        fontFamily: 'Arial, sans-serif',
+        lineHeight: '1.5',
     },
     inputContainer: {
         display: 'flex',
@@ -274,7 +350,9 @@ const styles = {
     input: {
         flex: 1,
         padding: '10px',
-        fontSize: '16px',
+        fontSize: '15px',
+        borderRadius: '5px',
+        border: '1px solid',
     },
     button: {
         padding: '10px',
@@ -287,3 +365,4 @@ const styles = {
 };
 
 export default Chat;
+
