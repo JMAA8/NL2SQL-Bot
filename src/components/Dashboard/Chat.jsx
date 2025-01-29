@@ -92,39 +92,28 @@ function Chat() {
         try {
             const response = await chatService.sendMessage(currentChatId, currentMessage);
 
-            // Nachricht strukturieren und hinzufügen
-            const newMessages = response.messages.flatMap((messages) => [
-                { sender: 'User', text: messages.prompt },
-                { sender: 'Bot', text: messages.response },
-            ]);
+            // Nachrichtenstruktur direkt aus der API-Antwort übernehmen
+            const formattedMessages = response.messages.map((message) => [
+                { sender: 'User', text: message.prompt },
+                { sender: 'Bot', text: message.response },
+            ]).flat(); // Flach machen, falls die Struktur verschachtelt ist
 
-            setMessages((prev) => [...prev, ...newMessages]);
+            // Ersetze die bestehenden Nachrichten
+            setMessages(formattedMessages);
             setCurrentMessage('');
 
+            // Wenn ein neuer Chat erstellt wird
             if (!currentChatId) {
                 console.log('Neuer Chat wird erstellt mit ID:', response.chatId);
                 setCurrentChatId(response.chatId);
                 await fetchUserChats();
-
-                /*
-                // Neuen Chat manuell zur Liste hinzufügen
-                setChats((prevChats) => [
-                    ...prevChats,
-                    {
-                        id: response.chatId,
-                        title: response.title || `Chat ${response.chatId}`,
-                    },
-                ]);
-
-                 */
-
-                // Kein zusätzlicher Abruf nötig
             }
         } catch (error) {
             alert('Fehler beim Senden der Nachricht: ' + error);
             console.error('Fehler beim Senden der Nachricht:', error);
         }
     };
+
 
     const handleEditTitle = (chatId, title) => {
         setEditingTitle(chatId);
