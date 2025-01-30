@@ -10,5 +10,5 @@ public class Document extends PanacheMongoEntity {
     public String userId;
     public String documentName;
     public String content;
-    public LocalDateTime timestamp;
+    public LocalDateTime timestamp = LocalDateTime.now();
 }

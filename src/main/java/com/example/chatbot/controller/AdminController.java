@@ -28,6 +28,20 @@ public class AdminController {
         return Response.ok(users).build();
     }
 
+    //Neuen Benutzer erstellen
+    @POST
+    @Path("/add")
+    @RolesAllowed("ADMIN") // Nur Administratoren dürfen neue Benutzer hinzufügen
+    public Response addUser(User newUser) {
+        try {
+            userService.addUser(newUser);
+            return Response.status(Response.Status.CREATED)
+                    .entity("Benutzer erfolgreich erstellt: " + newUser.getUsername())
+                    .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
     // Benutzer löschen
     @DELETE
     @Path("/user/{id}")

@@ -39,44 +39,6 @@ public class UserController {
         }
     }
 
-    // Neuen Benutzer hinzufügen
-    @POST
-    @Path("/add")
-    @RolesAllowed("ADMIN") // Nur Administratoren dürfen neue Benutzer hinzufügen
-    public Response addUser(User newUser) {
-        try {
-            userService.addUser(newUser);
-            return Response.status(Response.Status.CREATED)
-                    .entity("Benutzer erfolgreich erstellt: " + newUser.getUsername())
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
-    }
 
-    // Rolle zu einem Benutzer hinzufügen
-    @PUT
-    @Path("/user/{id}/add-role")
-    @RolesAllowed("ADMIN")
-    public Response addRoleToUser(@PathParam("id") Long id, @QueryParam("roleName") String roleName) {
-        try {
-            userService.assignRoleToUser(id, roleName);
-            return Response.ok("Rolle erfolgreich hinzugefügt").build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
-    }
 
-    // Rolle von einem Benutzer entfernen
-    @DELETE
-    @Path("/user/{id}/remove-role")
-    @RolesAllowed("ADMIN")
-    public Response removeRoleFromUser(@PathParam("id") Long id, @QueryParam("roleName") String roleName) {
-        try {
-            userService.removeRoleFromUser(id, roleName);
-            return Response.ok("Rolle erfolgreich entfernt").build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
-    }
 }

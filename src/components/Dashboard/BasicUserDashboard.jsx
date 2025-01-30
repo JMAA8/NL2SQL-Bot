@@ -1,45 +1,197 @@
 import React, { useState, useEffect } from 'react';
+import userService from '../../services/userService';
 import groupService from '../../services/groupService';
+import documentService from '../../services/documentService';
 
-console.log('BS_Dashboard');
 function BasicUserDashboard() {
-    const [joinedGroups, setJoinedGroups] = useState([]);
+    const [userData, setUserData] = useState({ name: '', password: '', email: '' });
+    const [documents, setDocuments] = useState([]);
+    const [documentSearch, setDocumentSearch] = useState('');
+    const [newDocument, setNewDocument] = useState(null);
+
+    const [groups, setGroups] = useState([]);
+    const [groupSearch, setGroupSearch] = useState('');
+    const [groupPassword, setGroupPassword] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState(null);
 
     useEffect(() => {
-        const fetchJoinedGroups = async () => {
-            try {
-                const groups = await groupService.getJoinedGroups();
-                if (!Array.isArray(groups)) {
-                    throw new Error('Unerwartete Antwortstruktur vom Server');
-                }
-                setJoinedGroups(groups);
-            } catch (error) {
-                console.error('Failed to fetch joined groups:', error);
-                //alert('Fehler beim Abrufen der Gruppen.');
-            }
-        };
+        fetchUserData();
+        fetchUserDocuments();
         fetchJoinedGroups();
     }, []);
 
-    return (
-        <div>
-            <h1>Basic User Dashboard</h1>
+    //Benutzerdaten abrufen
+    const fetchUserData = async () => {
+        try {
+            const user = await userService.getUserProfile(localStorage.getItem('username'));
+            setUserData(user);
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Benutzerdaten:', error);
+        }
+    };
 
-            {/* Section to view joined groups */}
-            <section>
-                <h2>My Groups</h2>
-                {joinedGroups.length > 0 ? (
-                    <ul>
-                        {joinedGroups.map((group) => (
-                            <li key={group.id}>{group.groupName}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p>Du bist noch keiner Gruppe beigetreten.</p>
+    //Dokumente abrufen
+    const fetchUserDocuments = async () => {
+        try {
+            const docs = await documentService.getUserDocuments();
+            setDocuments(docs);
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Dokumente:', error);
+        }
+    };
+
+    //Gruppen abrufen
+    const fetchJoinedGroups = async () => {
+        try {
+            const userGroups = await groupService.getJoinedGroups();
+            setGroups(userGroups);
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Gruppen:', error);
+        }
+    };
+
+    //Dokumentensuche
+    const filteredDocuments = documents.filter(doc =>
+        doc.name.toLowerCase().includes(documentSearch.toLowerCase())
+    );
+
+    //Datei-Upload
+    const handleFileUpload = async () => {
+        if (!newDocument) return;
+        try {
+            await documentService.uploadDocument(newDocument);
+            setNewDocument(null);
+            fetchUserDocuments();
+        } catch (error) {
+            console.error('Fehler beim Hochladen des Dokuments:', error);
+        }
+    };
+
+    //Gruppen-Suche
+    const handleGroupSearch = async () => {
+        try {
+            const searchResults = await groupService.searchGroups(groupSearch);
+            setGroups(searchResults);
+        } catch (error) {
+            console.error('Fehler bei der Gruppensuche:', error);
+        }
+    };
+
+    //Gruppe beitreten
+    const handleJoinGroup = async () => {
+        if (!selectedGroup || !groupPassword) return;
+        try {
+            await groupService.joinGroup(selectedGroup.id, groupPassword);
+            fetchJoinedGroups();
+            setGroupPassword('');
+        } catch (error) {
+            console.error('Fehler beim Beitritt zur Gruppe:', error);
+        }
+    };
+
+    return (
+        <div style={styles.container}>
+            {/* Persönliche Daten */}
+            <div style={styles.section}>
+                <h2>Personal Data:</h2>
+                <p><strong>Name:</strong> {userData.name}</p>
+                <p><strong>Password:</strong> {userData.password}</p>
+                <p><strong>E-Mail:</strong> {userData.email}</p>
+            </div>
+
+            {/* Dokumente */}
+            <div style={styles.section}>
+                <h2>Documents:</h2>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={documentSearch}
+                    onChange={(e) => setDocumentSearch(e.target.value)}
+                    style={styles.input}
+                />
+                <input
+                    type="file"
+                    onChange={(e) => setNewDocument(e.target.files[0])}
+                    style={styles.uploadInput}
+                />
+                <button onClick={handleFileUpload} style={styles.button}>Upload +</button>
+
+                <ul>
+                    {filteredDocuments.map((doc) => (
+                        <li key={doc.id}>{doc.name}</li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Gruppen */}
+            <div style={styles.section}>
+                <h2>Groups:</h2>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={groupSearch}
+                    onChange={(e) => setGroupSearch(e.target.value)}
+                    style={styles.input}
+                />
+                <button onClick={handleGroupSearch} style={styles.button}>🔍</button>
+                <ul>
+                    {groups.map((group) => (
+                        <li key={group.id} onClick={() => setSelectedGroup(group)}>
+                            {group.groupName}
+                        </li>
+                    ))}
+                </ul>
+
+                {/* Gruppenbeitritt */}
+                {selectedGroup && (
+                    <div style={styles.joinGroupContainer}>
+                        <h3>Join {selectedGroup.groupName}</h3>
+                        <input
+                            type="password"
+                            placeholder="Group Password"
+                            value={groupPassword}
+                            onChange={(e) => setGroupPassword(e.target.value)}
+                            style={styles.input}
+                        />
+                        <button onClick={handleJoinGroup} style={styles.button}>Join</button>
+                    </div>
                 )}
-            </section>
+            </div>
         </div>
     );
 }
+
+const styles = {
+    container: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '20px',
+        padding: '20px',
+    },
+    section: {
+        border: '1px solid #ccc',
+        padding: '15px',
+        borderRadius: '8px',
+    },
+    input: {
+        width: '100%',
+        padding: '8px',
+        marginBottom: '10px',
+    },
+    uploadInput: {
+        marginRight: '10px',
+    },
+    button: {
+        padding: '10px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+        borderRadius: '5px',
+    },
+    joinGroupContainer: {
+        marginTop: '10px',
+    },
+};
 
 export default BasicUserDashboard;
