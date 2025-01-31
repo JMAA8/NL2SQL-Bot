@@ -5,7 +5,13 @@ import documentService from '../../services/documentService';
 import {jwtDecode} from 'jwt-decode';
 
 function BasicUserDashboard() {
-    const [userData, setUserData] = useState({ name: '', password: '', email: '' });
+    const [userData, setUserData] = useState({
+        id: '',
+        username: '',
+        password: '',
+        email: 'Nicht verfügbar',
+        role: 'Keine Rolle'
+    });
     const [documents, setDocuments] = useState([]);
     const [documentSearch, setDocumentSearch] = useState('');
     const [newDocument, setNewDocument] = useState(null);
@@ -22,10 +28,21 @@ function BasicUserDashboard() {
     }, []);
 
 // Benutzerdaten abrufen
-    const fetchUserData = async () => {
+    const fetchUserData = async (userId) => {
         try {
-            const user = await userService.getUserProfile; // API mit userId abrufen
-            setUserData(user);
+            const user = await userService.getUserProfile(userId);
+            console.log("User Service - getUserProfile - Response:", user);
+            console.log("Role: ",user.roles);
+
+            const userData = {
+                id: user.id,
+                username: user.username || "Unbekannt",
+                password: user.password || "Nicht verfügbar",
+                email: user.email || "Keine E-Mail hinterlegt",
+                role: user.roles?.[0]?.roleName || "Keine Rolle"
+            };
+
+            setUserData(userData);
         } catch (error) {
             console.error('Fehler beim Abrufen der Benutzerdaten:', error);
         }
@@ -96,8 +113,9 @@ function BasicUserDashboard() {
             {/* Persönliche Daten */}
             <div style={styles.section}>
                 <h2>Personal Data:</h2>
-                <p><strong>Name:</strong> {userData.name}</p>
+                <p><strong>Name:</strong> {userData.username}</p>
                 <p><strong>Password:</strong> {userData.password}</p>
+                <p><strong>Role:</strong> {userData.role}</p>
                 <p><strong>E-Mail:</strong> {userData.email}</p>
             </div>
 
