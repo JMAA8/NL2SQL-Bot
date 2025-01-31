@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import userService from '../../services/userService';
 import groupService from '../../services/groupService';
 import documentService from '../../services/documentService';
+import {jwtDecode} from 'jwt-decode';
 
 function BasicUserDashboard() {
     const [userData, setUserData] = useState({ name: '', password: '', email: '' });
@@ -20,15 +21,16 @@ function BasicUserDashboard() {
         fetchJoinedGroups();
     }, []);
 
-    //Benutzerdaten abrufen
+// Benutzerdaten abrufen
     const fetchUserData = async () => {
         try {
-            const user = await userService.getUserProfile(localStorage.getItem('username'));
+            const user = await userService.getUserProfile; // API mit userId abrufen
             setUserData(user);
         } catch (error) {
             console.error('Fehler beim Abrufen der Benutzerdaten:', error);
         }
     };
+
 
     //Dokumente abrufen
     const fetchUserDocuments = async () => {

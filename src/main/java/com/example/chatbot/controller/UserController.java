@@ -12,7 +12,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/user")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"USER", "ADMIN"}) // Zugriff für Benutzer und Administratoren
+@RolesAllowed({"BASIC_USER", "ADVANCED_USER", "ADMIN"}) // Zugriff für Benutzer und Administratoren
 public class UserController {
 
     @Inject
@@ -22,6 +22,7 @@ public class UserController {
     @GET
     @Path("/profile/{id}")
     public Response getProfile(@PathParam("id") Long id) {
+        System.out.println("UserController - profile - Id: " + id);
         return userService.getUserById(id)
                 .map(user -> Response.ok(user).build())
                 .orElse(Response.status(Response.Status.NOT_FOUND).build());
@@ -29,8 +30,9 @@ public class UserController {
 
     // Profil aktualisieren
     @PUT
-    @Path("/profile/{id}")
+    @Path("/updateProfile/{id}")
     public Response updateProfile(@PathParam("id") Long id, User updatedUser) {
+        System.out.println("UserController - UpdateProfil - Id: " + id);
         try {
             userService.updateUserProfile(id, updatedUser);
             return Response.ok("Profil aktualisiert").build();

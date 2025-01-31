@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {jwtDecode} from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8080/user'; // Basis-URL für user-Endpoints
 const API_BASE_URL_Admin = 'http://localhost:8080/admin'; //Basis-URL für admin Endpoints
@@ -17,26 +18,40 @@ export const getAllUsers = async () => {
 };
 
 // Benutzerprofil abrufen
-export const getUserProfile = async (username) => {
+export const getUserProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
+    }
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
+    console.log('userService - getUserProfil - userId: ', userId)
     try {
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
-            params: { username },
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        const response = await axios.get(`${API_BASE_URL}/profile/${userId}`, {
+            headers: {Authorization: `Bearer ${localStorage.getItem('token')}`},
         });
-        return response.data; // Benutzerprofil
+        console.log('userService - getUserProfil - Response: ', response.data);
+        return response.data; // Benutzerprofil zurückgeben
     } catch (error) {
         throw error.response?.data || 'Fehler beim Abrufen des Benutzerprofils.';
     }
 };
 
+
 // Benutzerprofil aktualisieren
-export const updateUserProfile = async (username, updatedUser) => {
+export const updateUserProfile = async (updatedUser) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
+    }
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
+    console.log('userService - getUserProfil - userId: ', userId)
     try {
         const response = await axios.put(
-            `${API_BASE_URL}/profile`,
+            `${API_BASE_URL}/updateProfile/{userId}`,
             updatedUser,
             {
-                params: { username },
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             }
         );
