@@ -22,7 +22,7 @@ public class GroupService {
     UserRepository userRepository;
 
     // Gruppe erstellen
-    public Group createGroup(String groupName, Long ownerId) {
+    public Group createGroup(String groupName, Long ownerId, String password) {
         User owner = userRepository.findById(ownerId);
         if (owner == null) {
             throw new IllegalArgumentException("Besitzer nicht gefunden.");
@@ -31,6 +31,7 @@ public class GroupService {
         Group group = new Group();
         group.setGroupName(groupName);
         group.setOwner(owner);
+        group.setPassword(password);
         groupRepository.persist(group);
         return group;
     }
@@ -59,6 +60,29 @@ public class GroupService {
 
         group.getMembers().remove(user);
         groupRepository.persist(group);
+    }
+
+    @Transactional
+    public boolean joinGroup(Long userId, Long groupId, String password) {
+        User user = userRepository.findById(userId);
+        Group group = groupRepository.findById(groupId);
+
+        if (group == null || user == null) {
+            return false;
+        }
+
+        // Prüfen, ob der User bereits in der Gruppe ist
+        if (group.getMembers().contains(user)) {
+            return true;
+        }
+
+        // Passwort überprüfen
+        if (group.getPassword().equals(password)) {
+            group.getMembers().add(user);
+            return true;
+        }
+
+        return false; // Falsches Passwort
     }
 
     // Gruppe löschen

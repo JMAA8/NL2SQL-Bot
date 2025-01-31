@@ -25,11 +25,12 @@ export const getAllGroups = async () => {
 };
 
 // Gruppe erstellen
-export const createGroup = async (groupName) => {
+export const createGroup = async (groupName, groupPassword) => {
+    const ownerId = getUserIdFromToken();
     try {
         const response = await axios.post(
             API_BASE_URL,
-            { groupName },
+            { groupName, ownerId, groupPassword },
             {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             }

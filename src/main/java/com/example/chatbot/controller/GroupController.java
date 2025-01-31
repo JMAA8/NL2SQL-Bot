@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.Map;
 
 @Path("/groups")
 @Produces(MediaType.APPLICATION_JSON)
@@ -22,13 +23,15 @@ public class GroupController {
     // Gruppe erstellen
     @POST
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
-    public Response createGroup(@QueryParam("groupName") String groupName, @QueryParam("ownerId") Long ownerId) {
-        try {
-            Group group = groupService.createGroup(groupName, ownerId);
-            return Response.status(Response.Status.CREATED).entity(group).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+    public Response createGroup(String groupName, Long ownerId, String groupPassword) {
+
+
+        if (groupName == null || groupPassword == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Name und Passwort erforderlich").build();
         }
+
+        groupService.createGroup(groupName, ownerId, groupPassword);
+        return Response.ok("Gruppe erstellt").build();
     }
 
     // Benutzer zu Gruppe hinzufügen
@@ -78,6 +81,20 @@ public class GroupController {
             return Response.status(Response.Status.NOT_FOUND).entity("Keine Gruppen gefunden").build();
         }
         return Response.ok(groups).build();
+    }
+
+    @POST
+    @Path("/join")
+    public Response joinGroup(Map<String, String> joinData) {
+        Long userId = Long.parseLong(joinData.get("userId"));
+        Long groupId = Long.parseLong(joinData.get("groupId"));
+        String password = joinData.get("password");
+
+        boolean success = groupService.joinGroup(userId, groupId, password);
+        if (success) {
+            return Response.ok("Gruppe erfolgreich beigetreten").build();
+        }
+        return Response.status(Response.Status.FORBIDDEN).entity("Falsches Passwort oder Gruppe nicht gefunden").build();
     }
 
     // Alle Gruppen abrufen

@@ -15,6 +15,10 @@ public class Group {
     @Column(unique = true, nullable = false)
     private String groupName;
 
+    @Column(unique = true, nullable = false)
+    private String password;
+
+
     @ManyToMany
     @JoinTable(
             name = "group_users",
@@ -28,6 +32,14 @@ public class Group {
     private User owner;
 
     // Getter und Setter
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getPassword() {
+        return password;
+    }
     public Long getId() {
         return id;
     }
