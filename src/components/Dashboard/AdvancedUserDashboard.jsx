@@ -1,141 +1,221 @@
 import React, { useState, useEffect } from 'react';
-import groupService from '../../services/groupService';
 import userService from '../../services/userService';
+import groupService from '../../services/groupService';
+import documentService from '../../services/documentService';
 
 function AdvancedUserDashboard() {
+    const [userData, setUserData] = useState({
+        id: '',
+        username: '',
+        password: '',
+        email: 'Nicht verfügbar',
+        role: 'Keine Rolle'
+    });
+
     const [groups, setGroups] = useState([]);
-    const [groupName, setGroupName] = useState('');
-    const [selectedGroupId, setSelectedGroupId] = useState(null);
-    const [users, setUsers] = useState([]);
-    const [selectedUserId, setSelectedUserId] = useState('');
+    const [groupSearch, setGroupSearch] = useState('');
 
-    // Fetch all groups
+    const [documents, setDocuments] = useState([]);
+    const [documentSearch, setDocumentSearch] = useState('');
+    const [newDocument, setNewDocument] = useState(null);
+
+    // State für das Popup-Fenster zur Gruppenerstellung
+    const [showCreateGroupPopup, setShowCreateGroupPopup] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [newGroupPassword, setNewGroupPassword] = useState('');
+
     useEffect(() => {
-        const fetchGroups = async () => {
-            try {
-                const groups = await groupService.getAllGroups();
-                setGroups(groups);
-            } catch (error) {
-                console.error('Failed to fetch groups', error);
-            }
-        };
-        fetchGroups();
+        fetchUserData();
+        fetchUserGroups();
+        fetchUserDocuments();
     }, []);
 
-    // Fetch all users
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const users = await userService.getAllUsers();
-                setUsers(users);
-            } catch (error) {
-                console.error('Failed to fetch users', error);
-            }
-        };
-        fetchUsers();
-    }, []);
-
-    // Create a new group
-    const createGroup = async () => {
+    // Benutzerdaten abrufen
+    const fetchUserData = async () => {
         try {
-            const response = await groupService.createGroup(groupName);
-            alert(response);
-            setGroupName('');
-            setGroups((prevGroups) => [...prevGroups, { id: response.id, groupName }]);
+            const user = await userService.getUserProfile();
+            console.log("User Service - getUserProfile - Response:", user);
+
+            const userData = {
+                id: user.id,
+                username: user.username || "Unbekannt",
+                password: user.password || "Nicht verfügbar",
+                email: user.email || "Keine E-Mail hinterlegt",
+                role: user.roles?.[0]?.roleName || "Keine Rolle"
+            };
+
+            setUserData(userData);
         } catch (error) {
-            console.error('Failed to create group', error);
-            alert(error);
+            console.error('Fehler beim Abrufen der Benutzerdaten:', error);
         }
     };
 
-    // Add a user to a group
-    const addUserToGroup = async () => {
-        if (!selectedGroupId || !selectedUserId) {
-            alert('Please select a group and a user');
+    // Gruppen abrufen
+    const fetchUserGroups = async () => {
+        try {
+            const userGroups = await groupService.getJoinedGroups();
+            console.log("userGroups: ", userGroups);
+
+            if (!userGroups || userGroups.length === 0) {
+                setGroups([{ id: "no-groups", groupName: "Noch keiner Gruppe beigetreten" }]);
+            } else {
+                setGroups(userGroups);
+            }
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Gruppen:', error);
+        }
+    };
+
+    // Gruppen-Suche
+    const handleGroupSearch = async () => {
+        try {
+            const searchResults = await groupService.searchGroups(groupSearch);
+            setGroups(searchResults);
+        } catch (error) {
+            console.error('Fehler bei der Gruppensuche:', error);
+        }
+    };
+
+    // Neue Gruppe erstellen
+    const handleCreateGroup = async () => {
+        if (!newGroupName || !newGroupPassword) {
+            alert("Bitte Gruppenname und Passwort eingeben!");
             return;
         }
 
         try {
-            const response = await groupService.addUserToGroup(selectedGroupId, selectedUserId);
-            alert(response);
+            await groupService.createGroup({
+                groupName: newGroupName,
+                password: newGroupPassword
+            });
+
+            alert("Gruppe erfolgreich erstellt!");
+            setShowCreateGroupPopup(false);
+            setNewGroupName('');
+            setNewGroupPassword('');
+            fetchUserGroups();
         } catch (error) {
-            console.error('Failed to add user to group', error);
-            alert(error);
+            console.error('Fehler beim Erstellen der Gruppe:', error);
+            alert("Fehler beim Erstellen der Gruppe.");
         }
     };
 
-    // Delete a group
-    const deleteGroup = async (groupId) => {
+    // Dokumente abrufen
+    const fetchUserDocuments = async () => {
         try {
-            const response = await groupService.deleteGroup(groupId);
-            alert(response);
-            setGroups((prevGroups) => prevGroups.filter((group) => group.id !== groupId));
+            const docs = await documentService.getUserDocuments();
+            setDocuments(docs);
         } catch (error) {
-            console.error('Failed to delete group', error);
-            alert(error);
+            console.error('Fehler beim Abrufen der Dokumente:', error);
+        }
+    };
+
+    // Dokumentensuche
+    const filteredDocuments = documents.filter(doc =>
+        doc.name.toLowerCase().includes(documentSearch.toLowerCase())
+    );
+
+    // Datei-Upload
+    const handleFileUpload = async () => {
+        if (!newDocument) return;
+        try {
+            await documentService.uploadDocument(newDocument);
+            setNewDocument(null);
+            fetchUserDocuments();
+        } catch (error) {
+            console.error('Fehler beim Hochladen des Dokuments:', error);
         }
     };
 
     return (
-        <div>
-            <h1>Advanced User Dashboard</h1>
+        <div style={styles.container}>
+            {/* Persönliche Daten */}
+            <div style={styles.section}>
+                <h2>Personal Data:</h2>
+                <p><strong>Name:</strong> {userData.username}</p>
+                <p><strong>Password:</strong> {userData.password}</p>
+                <p><strong>Role:</strong> {userData.role}</p>
+                <p><strong>E-Mail:</strong> {userData.email}</p>
+            </div>
 
-            {/* Section to create a new group */}
-            <section>
-                <h2>Create Group</h2>
+            {/* Dokumente */}
+            <div style={styles.section}>
+                <h2>Documents:</h2>
                 <input
                     type="text"
-                    placeholder="Group Name"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Search..."
+                    value={documentSearch}
+                    onChange={(e) => setDocumentSearch(e.target.value)}
+                    style={styles.input}
                 />
-                <button onClick={createGroup}>Create Group</button>
-            </section>
+                <input
+                    type="file"
+                    onChange={(e) => setNewDocument(e.target.files[0])}
+                    style={styles.uploadInput}
+                />
+                <button onClick={handleFileUpload} style={styles.button}>Upload +</button>
 
-            {/* Section to manage groups */}
-            <section>
-                <h2>Manage Groups</h2>
+                <ul>
+                    {filteredDocuments.map((doc) => (
+                        <li key={doc.id}>{doc.name}</li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Gruppen */}
+            <div style={styles.section}>
+                <h2>Groups:</h2>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={groupSearch}
+                    onChange={(e) => setGroupSearch(e.target.value)}
+                    style={styles.input}
+                />
+                <button onClick={handleGroupSearch} style={styles.button}>🔍</button>
+                <button onClick={() => setShowCreateGroupPopup(true)} style={styles.createButton}>+ Neue Gruppe</button>
+
                 <ul>
                     {groups.map((group) => (
                         <li key={group.id}>
                             {group.groupName}
-                            <button onClick={() => deleteGroup(group.id)}>Delete</button>
                         </li>
                     ))}
                 </ul>
-            </section>
+            </div>
 
-            {/* Section to add users to a group */}
-            <section>
-                <h2>Add User to Group</h2>
-                <select
-                    value={selectedGroupId}
-                    onChange={(e) => setSelectedGroupId(e.target.value)}
-                >
-                    <option value="">Select Group</option>
-                    {groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                            {group.groupName}
-                        </option>
-                    ))}
-                </select>
-
-                <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                >
-                    <option value="">Select User</option>
-                    {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                            {user.username}
-                        </option>
-                    ))}
-                </select>
-
-                <button onClick={addUserToGroup}>Add User</button>
-            </section>
+            {/* PopUp-Fenster zur Gruppenerstellung */}
+            {showCreateGroupPopup && (
+                <div style={styles.popupOverlay}>
+                    <div style={styles.popup}>
+                        <h2>Neue Gruppe erstellen</h2>
+                        <input
+                            type="text"
+                            placeholder="Gruppenname"
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            style={styles.input}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Passwort"
+                            value={newGroupPassword}
+                            onChange={(e) => setNewGroupPassword(e.target.value)}
+                            style={styles.input}
+                        />
+                        <div style={styles.popupButtons}>
+                            <button onClick={handleCreateGroup} style={styles.button}>Erstellen</button>
+                            <button onClick={() => setShowCreateGroupPopup(false)} style={styles.cancelButton}>Abbrechen</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
+const styles = {
+    // Gleiche Styles wie in BasicUserDashboard
+};
 
 export default AdvancedUserDashboard;
