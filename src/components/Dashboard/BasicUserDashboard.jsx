@@ -63,6 +63,7 @@ function BasicUserDashboard() {
     const fetchJoinedGroups = async () => {
         try {
             const userGroups = await groupService.getJoinedGroups();
+            console.log("userGroups: ", userGroups)
             setGroups(userGroups);
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppen:', error);

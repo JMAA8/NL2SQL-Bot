@@ -9,6 +9,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
+
 @Path("/groups")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -68,9 +70,19 @@ public class GroupController {
         }
     }
 
+    @GET
+    @Path("/joined/{userId}")
+    public Response getJoinedGroups(@PathParam("userId") Long userId) {
+        List<Group> groups = groupService.getGroupsByUserId(userId);
+        if (groups.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Keine Gruppen gefunden").build();
+        }
+        return Response.ok(groups).build();
+    }
+
     // Alle Gruppen abrufen
     @GET
-    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    @RolesAllowed({"ADMIN"})
     public Response getAllGroups() {
         return Response.ok(groupService.getAllGroups()).build();
     }

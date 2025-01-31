@@ -7,6 +7,7 @@ import com.example.chatbot.repository.UserRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,6 +73,11 @@ public class GroupService {
     // Gruppe abrufen
     public Optional<Group> getGroupById(Long groupId) {
         return Optional.ofNullable(groupRepository.findById(groupId));
+    }
+
+    @Transactional
+    public List<Group> getGroupsByUserId(Long userId) {
+        return groupRepository.findGroupsByUserId(userId);
     }
 
     // Alle Gruppen abrufen

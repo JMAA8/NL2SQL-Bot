@@ -1,6 +1,16 @@
 import axios from 'axios';
+import {jwtDecode} from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8080/groups'; // Basis-URL für Gruppen-Endpoints
+
+const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
+    }
+    const decoded = jwtDecode(token);
+    return decoded.userId; // Angenommen, die Benutzer-ID ist als `userId` im Token enthalten
+};
 
 // Alle Gruppen abrufen
 export const getAllGroups = async () => {
@@ -76,8 +86,9 @@ export const deleteGroup = async (groupId) => {
 
 // Gruppen, denen der Benutzer angehört (Basic_User spezifisch)
 export const getJoinedGroups = async () => {
+    const userId = getUserIdFromToken();
     try {
-        const response = await axios.get(`${API_BASE_URL}/joined`, {
+        const response = await axios.get(`${API_BASE_URL}/joined/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         return response.data; // Liste der Gruppen, denen der Benutzer angehört
