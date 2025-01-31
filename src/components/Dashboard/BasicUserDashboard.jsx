@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import userService from '../../services/userService';
 import groupService from '../../services/groupService';
 import documentService from '../../services/documentService';
-import {jwtDecode} from 'jwt-decode';
 
 function BasicUserDashboard() {
     const [userData, setUserData] = useState({
@@ -63,8 +62,13 @@ function BasicUserDashboard() {
     const fetchJoinedGroups = async () => {
         try {
             const userGroups = await groupService.getJoinedGroups();
-            console.log("userGroups: ", userGroups)
-            setGroups(userGroups);
+            console.log("userGroups: ", userGroups);
+
+            if (!userGroups || userGroups.length === 0) {
+                setGroups([{ id: "no-groups", groupName: "Noch keiner Gruppe beigetreten" }]);
+            } else {
+                setGroups(userGroups);
+            }
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppen:', error);
         }

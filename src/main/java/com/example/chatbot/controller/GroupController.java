@@ -73,12 +73,13 @@ public class GroupController {
         }
     }
 
+    //Gruppen des Users abrufen
     @GET
     @Path("/joined/{userId}")
     public Response getJoinedGroups(@PathParam("userId") Long userId) {
         List<Group> groups = groupService.getGroupsByUserId(userId);
         if (groups.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Keine Gruppen gefunden").build();
+            System.out.println("GroupController - joined - Keiner Gruppe beigetreten");
         }
         return Response.ok(groups).build();
     }
