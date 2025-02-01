@@ -1,5 +1,6 @@
 package com.example.chatbot.controller;
 
+import com.example.chatbot.entity.Group;
 import com.example.chatbot.entityMongoDB.Document;
 import com.example.chatbot.service.DocumentService;
 import jakarta.inject.Inject;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
+import java.util.Collections;
 import java.util.List;
 
 @Path("/api/documents")
@@ -24,6 +26,7 @@ public class DocumentController {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response saveDocument(@MultipartForm MultipartFormDataInput input) {
         try {
+            System.out.println("DocumentController - saveDocument - Input: " + input);
             documentService.saveDocument(input);
             return Response.ok("Dokument erfolgreich gespeichert").build();
         } catch (Exception e) {
@@ -35,10 +38,31 @@ public class DocumentController {
     // Dokumente eines Benutzers abrufen
     @GET
     @Path("/{userId}")
-    public List<Document> getDocumentsByUserId(@PathParam("userId") String userId, @QueryParam("search") String search) {
+    public Response getDocumentsByUserId(@PathParam("userId") Long userId, @QueryParam("search") String search) {
+        System.out.println("DocumentController - Get by Id - userId: " + userId);
+
+        List<Document> documents;
+
         if (search != null && !search.isEmpty()) {
-            return documentService.searchDocuments(userId, search);
+            System.out.println("DocumentController - Get by Id - Search: " + search);
+            documents = documentService.searchDocuments(userId, search);
+        } else {
+            documents = documentService.getDocumentsByUserId(userId);
         }
-        return documentService.getDocumentsByUserId(userId);
+
+        if (documents.isEmpty()) {
+            System.out.println("DocumentController - Get - Keine Dokumente vorhanden: " + documents);
+            return Response.ok(Collections.emptyList()).build(); // Leere Liste zurückgeben
+        }
+
+        return Response.ok(documents).build();
+    }
+
+
+    @DELETE
+    @Path("/{documentId}")
+    public Response deleteDocument(@PathParam("documentId") String documentId) {
+        documentService.deleteDocument(documentId);
+        return Response.ok("Dokument gelöscht").build();
     }
 }

@@ -52,7 +52,17 @@ function BasicUserDashboard() {
     const fetchUserDocuments = async () => {
         try {
             const docs = await documentService.getUserDocuments();
-            setDocuments(docs);
+            console.log("Docs: ", docs);
+
+            if (!docs || docs.length === 0) {
+                console.log("Keine Dokumente vorhanden");
+                setDocuments([{ id: "no-documents", name: "Noch keine Documents hochgeladen" }]);
+            } else {
+                setDocuments(docs.map(doc => ({
+                    id: doc.id || "unknown",
+                    name: doc.documentName?.toString() || "Unbenanntes Dokument"
+                })));
+            }
         } catch (error) {
             console.error('Fehler beim Abrufen der Dokumente:', error);
         }

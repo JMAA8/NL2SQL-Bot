@@ -5,6 +5,7 @@ import com.example.chatbot.repository.DocumentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
@@ -26,21 +27,29 @@ public class DocumentService {
             Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
             Document document = new Document();
 
-            // Benutzer-ID aus der Anfrage abrufen
+            // Benutzer-ID abrufen und in Long umwandeln
             if (uploadForm.containsKey("userId")) {
                 String userId = uploadForm.get("userId").get(0).getBody(String.class, null);
-                document.userId = userId;
+                document.userId = Long.parseLong(userId);
             }
 
-            // Dokumentname abrufen
+            // Dokumentname abrufen (falls explizit gesendet)
             if (uploadForm.containsKey("documentName")) {
-                String documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
-                document.documentName = documentName;
+                document.documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
             }
 
-            // Dateiinhalt abrufen
+            // Dateiinhalt abrufen und den Namen aus dem Upload extrahieren
             if (uploadForm.containsKey("file")) {
-                InputStream inputStream = uploadForm.get("file").get(0).getBody(InputStream.class, null);
+                InputPart filePart = uploadForm.get("file").get(0);
+                MultivaluedMap<String, String> headers = filePart.getHeaders();
+
+                // Extrahiere den Dateinamen aus dem Content-Disposition-Header
+                String fileName = extractFileName(headers);
+                if (document.documentName == null || document.documentName.isEmpty()) {
+                    document.documentName = fileName; // Falls kein Name übergeben wurde, verwende den Dateinamen
+                }
+
+                InputStream inputStream = filePart.getBody(InputStream.class, null);
                 document.content = readInputStream(inputStream);
             }
 
@@ -50,13 +59,28 @@ public class DocumentService {
         }
     }
 
+    // Methode zum Extrahieren des Dateinamens aus den Headers
+    private String extractFileName(MultivaluedMap<String, String> headers) {
+        String contentDisposition = headers.getFirst("Content-Disposition");
+        if (contentDisposition != null) {
+            for (String part : contentDisposition.split(";")) {
+                if (part.trim().startsWith("filename")) {
+                    return part.split("=")[1].trim().replace("\"", "");
+                }
+            }
+        }
+        return "Unbenanntes_Dokument";
+    }
+
+
+
     @Transactional
-    public List<Document> getDocumentsByUserId(String userId) {
+    public List<Document> getDocumentsByUserId(Long userId) {
         return documentRepository.find("userId", userId).list();
     }
 
     @Transactional
-    public List<Document> searchDocuments(String userId, String search) {
+    public List<Document> searchDocuments(Long userId, String search) {
         return documentRepository.list("userId = ?1 and lower(documentName) like ?2", userId, "%" + search.toLowerCase() + "%");
     }
 
@@ -68,5 +92,10 @@ public class DocumentService {
             result.write(buffer, 0, length);
         }
         return result.toString(StandardCharsets.UTF_8);
+    }
+
+    @Transactional
+    public void deleteDocument(String documentId) {
+        documentRepository.delete("id", documentId);
     }
 }

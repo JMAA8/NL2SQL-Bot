@@ -1,9 +1,20 @@
 import axios from 'axios';
+import {jwtDecode} from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8080/api/documents';
 
+const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
+    }
+    const decoded = jwtDecode(token);
+    return decoded.userId; // Angenommen, die Benutzer-ID ist als `userId` im Token enthalten
+};
+
 //Benutzer-Dokumente abrufen
-export const getUserDocuments = async (userId) => {
+export const getUserDocuments = async () => {
+    const userId = getUserIdFromToken();
     try {
         const response = await axios.get(`${API_BASE_URL}/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -17,9 +28,10 @@ export const getUserDocuments = async (userId) => {
 
 // Neues Dokument hochladen
 export const uploadDocument = async (file) => {
+    const userId = getUserIdFromToken();
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('userId', localStorage.getItem('userId'));
+    formData.append('userId', userId);
 
     try {
         await axios.post(API_BASE_URL, formData, {
