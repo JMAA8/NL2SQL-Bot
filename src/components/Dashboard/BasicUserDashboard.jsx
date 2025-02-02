@@ -27,9 +27,9 @@ function BasicUserDashboard() {
     }, []);
 
 // Benutzerdaten abrufen
-    const fetchUserData = async (userId) => {
+    const fetchUserData = async () => {
         try {
-            const user = await userService.getUserProfile(userId);
+            const user = await userService.getUserProfile();
             console.log("User Service - getUserProfile - Response:", user);
             console.log("Role: ",user.roles);
 
