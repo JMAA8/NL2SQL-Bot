@@ -1,5 +1,6 @@
 package com.example.chatbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +22,7 @@ public class Role {
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
+    @JsonIgnore // Verhindert unendliche Rekursion beim Serialisieren
     private Set<Permission> permissions = new HashSet<>();
 
     // Getter und Setter

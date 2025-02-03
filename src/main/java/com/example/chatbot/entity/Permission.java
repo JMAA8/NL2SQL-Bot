@@ -1,5 +1,6 @@
 package com.example.chatbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,8 @@ public class Permission {
     @Column(unique = true, nullable = false)
     private String permissionName;
 
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+    @JsonIgnore // Verhindert unendliche Rekursion beim Serialisieren
     private Set<Role> roles = new HashSet<>();
 
     // Getter und Setter
