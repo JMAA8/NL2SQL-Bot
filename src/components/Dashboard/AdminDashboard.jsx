@@ -233,12 +233,14 @@ function AdminDashboard() {
                     {users
                         .filter((user) =>
                             user.username.toLowerCase().includes(userSearch.toLowerCase()) ||
-                            user.email.toLowerCase().includes(userSearch.toLowerCase())
+                            user.id.toString().includes(userSearch) || // id sollte als String behandelt werden
+                            (user.email && user.email.toLowerCase().includes(userSearch.toLowerCase())) // Prüfen, ob email existiert
                         )
                         .map((user) => (
-                            <li key={user.id}>{user.username} ({user.email})</li>
+                            <li key={user.id}>{user.username}</li>
                         ))}
                 </ul>
+
                 <input
                     type="text"
                     placeholder="Username"
