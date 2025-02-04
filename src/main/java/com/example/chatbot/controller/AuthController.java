@@ -1,10 +1,9 @@
 package com.example.chatbot.controller;
 
-import com.example.chatbot.entity.User;
+import com.example.chatbot.DTO.UserCredentials;
 import com.example.chatbot.service.JwtService;
 import com.example.chatbot.service.UserService;
 import jakarta.annotation.security.PermitAll;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;

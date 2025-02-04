@@ -14,6 +14,7 @@ function AdminDashboard() {
 
     const [documents, setDocuments] = useState([]);
     const [documentSearch, setDocumentSearch] = useState('');
+    const [newDocument, setNewDocument] = useState(null);
 
     const [groups, setGroups] = useState([]);
     const [groupSearch, setGroupSearch] = useState('');
@@ -124,9 +125,22 @@ function AdminDashboard() {
     const handleDeleteDocument = async (documentId) => {
         try {
             await documentService.deleteDocument(documentId);
+            console.log("AdminDashboard - Document ist erfolgreich gelöscht")
             fetchUserDocuments();
         } catch (error) {
             console.error('Fehler beim Löschen des Dokuments:', error);
+        }
+    };
+
+    //Datei-Upload
+    const handleFileUpload = async () => {
+        if (!newDocument) return;
+        try {
+            await documentService.uploadDocument(newDocument);
+            setNewDocument(null);
+            fetchUserDocuments();
+        } catch (error) {
+            console.error('Fehler beim Hochladen des Dokuments:', error);
         }
     };
 
@@ -143,7 +157,7 @@ function AdminDashboard() {
 
             {/* Eigene Dokumente */}
             <div style={styles.section}>
-                <h2>Documents:</h2>
+                <h2>Personal Documents:</h2>
                 <input
                     type="text"
                     placeholder="Search..."
@@ -151,12 +165,20 @@ function AdminDashboard() {
                     onChange={(e) => setDocumentSearch(e.target.value)}
                     style={styles.input}
                 />
+                <input
+                    type="file"
+                    onChange={(e) => setNewDocument(e.target.files[0])}
+                    style={styles.uploadInput}
+                />
+                <button onClick={handleFileUpload} style={styles.button}>Upload +</button>
                 <ul>
+
                     {documents
                         .filter((doc) => doc.documentName.toLowerCase().includes(documentSearch.toLowerCase()))
                         .map((doc) => (
                             <li key={doc.id}>
                                 {doc.documentName}
+
                                 <button onClick={() => handleDeleteDocument(doc.id)} style={styles.deleteButton}>🗑️</button>
                             </li>
                         ))}
@@ -257,7 +279,7 @@ const styles = {
         borderRadius: '8px',
     },
     input: {
-        width: '100%',
+        width: '95%',
         padding: '8px',
         marginBottom: '10px',
     },

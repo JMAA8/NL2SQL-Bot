@@ -1,5 +1,6 @@
 package com.example.chatbot.controller;
 
+import com.example.chatbot.DTO.GroupCreate;
 import com.example.chatbot.entity.Group;
 import com.example.chatbot.entity.User;
 import com.example.chatbot.service.GroupService;
@@ -23,14 +24,16 @@ public class GroupController {
     // Gruppe erstellen
     @POST
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
-    public Response createGroup(String groupName, Long ownerId, String groupPassword) {
+    public Response createGroup(GroupCreate request) {
 
-
-        if (groupName == null || groupPassword == null) {
+        System.out.println(
+                "GroupController - create - Name/Owner/Password: " + request.groupNameCreated + "/ " + request.ownerIdCreated + "/ "+ request.groupPasswordCreated
+        );
+        if (request.groupNameCreated == null || request.groupPasswordCreated == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Name und Passwort erforderlich").build();
         }
 
-        groupService.createGroup(groupName, ownerId, groupPassword);
+        groupService.createGroup(request.groupNameCreated, request.ownerIdCreated, request.groupPasswordCreated);
         return Response.ok("Gruppe erstellt").build();
     }
 

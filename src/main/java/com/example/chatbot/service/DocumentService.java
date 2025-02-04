@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MultivaluedMap;
+import org.bson.types.ObjectId;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
@@ -96,6 +97,16 @@ public class DocumentService {
 
     @Transactional
     public void deleteDocument(String documentId) {
-        documentRepository.delete("id", documentId);
+        System.out.println("DocumentService - delete - documentId: " + documentId);
+
+        try {
+            ObjectId objectId = new ObjectId(documentId);
+            //documentRepository.deleteById(objectId);
+            documentRepository.delete("_id", objectId);
+            System.out.println("Dokument gelöscht: " + documentId);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Ungültige ObjectId: " + documentId);
+            throw new RuntimeException("Fehlerhafte ObjectId: " + documentId, e);
+        }
     }
 }

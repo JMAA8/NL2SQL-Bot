@@ -62,6 +62,7 @@ public class DocumentController {
     @DELETE
     @Path("/{documentId}")
     public Response deleteDocument(@PathParam("documentId") String documentId) {
+        System.out.println("documentController- delete - DocumentId: " + documentId);
         documentService.deleteDocument(documentId);
         return Response.ok("Dokument gelöscht").build();
     }

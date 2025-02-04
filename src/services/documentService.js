@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8080/api/documents';
 
@@ -12,7 +12,7 @@ const getUserIdFromToken = () => {
     return decoded.userId; // Angenommen, die Benutzer-ID ist als `userId` im Token enthalten
 };
 
-//Benutzer-Dokumente abrufen
+// Benutzer-Dokumente abrufen
 export const getUserDocuments = async () => {
     const userId = getUserIdFromToken();
     try {
@@ -46,7 +46,7 @@ export const uploadDocument = async (file) => {
     }
 };
 
-//Dokument nach Namen suchen
+// Dokument nach Namen suchen
 export const searchDocuments = async (userId, query) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/${userId}?search=${query}`, {
@@ -59,8 +59,23 @@ export const searchDocuments = async (userId, query) => {
     }
 };
 
+// Dokument löschen
+export const deleteDocument = async (documentId) => {
+    console.log("documentService - DocumentId: ", documentId);
+    try {
+        await axios.delete(`${API_BASE_URL}/${documentId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        console.log("documentService - Document gelöscht")
+    } catch (error) {
+        console.error(`Fehler beim Löschen des Dokuments mit ID ${documentId}:`, error);
+        throw error.response?.data || 'Fehler beim Löschen des Dokuments.';
+    }
+};
+
 export default {
     getUserDocuments,
     uploadDocument,
     searchDocuments,
+    deleteDocument,
 };

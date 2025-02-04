@@ -22,7 +22,14 @@ public class GroupService {
     UserRepository userRepository;
 
     // Gruppe erstellen
+    @Transactional
     public Group createGroup(String groupName, Long ownerId, String password) {
+        System.out.println(
+                "GroupService - create - " + groupName + "/ " + ownerId + "/ "+ password
+        );
+        if (ownerId == null) {
+            throw new IllegalArgumentException("Owner ID ist null!");
+        }
         User owner = userRepository.findById(ownerId);
         if (owner == null) {
             throw new IllegalArgumentException("Besitzer nicht gefunden.");

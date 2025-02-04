@@ -1,4 +1,4 @@
-package com.example.chatbot.controller;
+package com.example.chatbot.DTO;
 
 public class UserCredentials {
     private String username;

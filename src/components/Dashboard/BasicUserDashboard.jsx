@@ -123,6 +123,17 @@ function BasicUserDashboard() {
         }
     };
 
+    // Dokument löschen
+    const handleDeleteDocument = async (documentId) => {
+        try {
+            await documentService.deleteDocument(documentId);
+            console.log("AdminDashboard - Document ist erfolgreich gelöscht")
+            fetchUserDocuments();
+        } catch (error) {
+            console.error('Fehler beim Löschen des Dokuments:', error);
+        }
+    };
+
     return (
         <div style={styles.container}>
             {/* Persönliche Daten */}
@@ -153,7 +164,10 @@ function BasicUserDashboard() {
 
                 <ul>
                     {filteredDocuments.map((doc) => (
-                        <li key={doc.id}>{doc.name}</li>
+                        <li key={doc.id}>{doc.name}
+
+                            <button onClick={() => handleDeleteDocument(doc.id)} style={styles.deleteButton}>🗑️</button>
+                        </li>
                     ))}
                 </ul>
             </div>
@@ -209,7 +223,7 @@ const styles = {
         borderRadius: '8px',
     },
     input: {
-        width: '100%',
+        width: '95%',
         padding: '8px',
         marginBottom: '10px',
     },
@@ -227,6 +241,15 @@ const styles = {
     joinGroupContainer: {
         marginTop: '10px',
     },
+
+    deleteButton: {
+        marginLeft: '10px',
+        backgroundColor: '#ff4d4d',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+        borderRadius: '5px',
+    }
 };
 
 export default BasicUserDashboard;
