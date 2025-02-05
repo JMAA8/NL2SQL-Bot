@@ -4,18 +4,7 @@ import {jwtDecode} from "jwt-decode";
 const API_BASE_URL = 'http://localhost:8080/user'; // Basis-URL für user-Endpoints
 const API_BASE_URL_Admin = 'http://localhost:8080/admin'; //Basis-URL für admin Endpoints
 
-// Alle Benutzer abrufen
-export const getAllUsers = async () => {
-    try {
-        const response = await axios.get(`${API_BASE_URL_Admin}/users`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        console.log('Userliste aus Response: ', response.data);
-        return response.data; // Liste der Benutzer
-    } catch (error) {
-        throw error.response?.data || 'Fehler beim Abrufen der Benutzer.';
-    }
-};
+
 
 // Benutzerprofil abrufen
 export const getUserProfile = async () => {
@@ -64,7 +53,7 @@ export const updateUserProfile = async (updatedUser) => {
 // Benutzer löschen
 export const deleteUser = async (userId) => {
     try {
-        const response = await axios.delete(`${API_BASE_URL}/${userId}`, {
+        const response = await axios.delete(`${API_BASE_URL_Admin}/${userId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         return response.data; // Erfolgsnachricht
@@ -105,7 +94,6 @@ export const removeRoleFromUser = async (userId, roleName) => {
 
 
 export default {
-    getAllUsers,
     getUserProfile,
     updateUserProfile,
     deleteUser,

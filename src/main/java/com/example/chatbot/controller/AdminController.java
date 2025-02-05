@@ -1,5 +1,6 @@
 package com.example.chatbot.controller;
 
+import com.example.chatbot.DTO.UserCredentials;
 import com.example.chatbot.entity.User;
 import com.example.chatbot.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
@@ -32,11 +33,14 @@ public class AdminController {
     @POST
     @Path("/add")
     @RolesAllowed("ADMIN") // Nur Administratoren dürfen neue Benutzer hinzufügen
-    public Response addUser(User newUser) {
+    public Response addUser(UserCredentials credentials) {
+        System.out.println("AdminController - addUser - Username: " + credentials.getUsername());
+        String name = credentials.getUsername();
+        String password = credentials.getPassword();
         try {
-            userService.addUser(newUser);
+            userService.registerUser(name, password);
             return Response.status(Response.Status.CREATED)
-                    .entity("Benutzer erfolgreich erstellt: " + newUser.getUsername())
+                    .entity("Benutzer erfolgreich erstellt: " + credentials.getUsername())
                     .build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

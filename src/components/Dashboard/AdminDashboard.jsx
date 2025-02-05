@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import userService from '../../services/userService';
 import groupService from '../../services/groupService';
 import documentService from '../../services/documentService';
+import adminService from '../../services/adminService';
 
 function AdminDashboard() {
     const [userData, setUserData] = useState({
@@ -26,8 +27,6 @@ function AdminDashboard() {
     const [newUser, setNewUser] = useState({
         username: '',
         password: '',
-        email: '',
-        role: 'BASIC_USER'
     });
 
     useEffect(() => {
@@ -91,7 +90,7 @@ function AdminDashboard() {
     // Alle Benutzer abrufen
     const fetchAllUsers = async () => {
         try {
-            const allUsers = await userService.getAllUsers();
+            const allUsers = await adminService.getAllUsers();
             setUsers(allUsers);
         } catch (error) {
             console.error('Fehler beim Abrufen der Benutzer:', error);
@@ -113,9 +112,10 @@ function AdminDashboard() {
     // Neuen Benutzer erstellen
     const handleCreateUser = async () => {
         try {
-            await userService.createUser(newUser);
+            await adminService.createUser(newUser.username, newUser.password);
+            alert('Erstellung erfolgreich!');
             fetchAllUsers();
-            setNewUser({ username: '', password: '', email: '', role: 'BASIC_USER' });
+            setNewUser({ username: '', password: ''});
         } catch (error) {
             console.error('Fehler beim Erstellen des Benutzers:', error);
         }
@@ -253,13 +253,6 @@ function AdminDashboard() {
                     placeholder="Password"
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    style={styles.input}
-                />
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     style={styles.input}
                 />
                 <button onClick={handleCreateUser} style={styles.button}>Create</button>
