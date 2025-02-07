@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // Ohne geschweifte Klammern
+import { jwtDecode } from 'jwt-decode';
 
 function ProtectedRoute({ role, children }) {
     const token = localStorage.getItem('token');
@@ -16,19 +16,31 @@ function ProtectedRoute({ role, children }) {
             console.error('Invalid token');
         }
     }
+
     console.log('ProtectedRoute: Token:', token);
     console.log('ProtectedRoute: UserRole:', userRole);
     console.log('ProtectedRoute: Erwartete Rolle:', role);
 
     if (!token) {
+        console.log('ProtectedRoute: Zugriff verweigert (Kein Token)');
         return <Navigate to="/login" />;
-        console.log('ProtectedRout: Zugriff verweigert (Kein Token)')
     }
 
-    if (role && userRole !== role) {
-        console.log('ProtectedRoute: Zugriff verweigert (Keine Rolle)');
-        return <Navigate to="/login" />;
+    // Anpassung: Unterstützt jetzt mehrere Rollen
+    if (role) {
+        if (Array.isArray(role)) {
+            if (!role.includes(userRole)) {
+                console.log('ProtectedRoute: Zugriff verweigert (Nicht in erlaubten Rollen)');
+                return <Navigate to="/login" />;
+            }
+        } else {
+            if (userRole !== role) {
+                console.log('ProtectedRoute: Zugriff verweigert (Keine Rolle)');
+                return <Navigate to="/login" />;
+            }
+        }
     }
+
     return children;
 }
 

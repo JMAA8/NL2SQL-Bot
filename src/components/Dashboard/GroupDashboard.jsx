@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import GroupService from '../services/GroupService';
-import UserService from '../services/UserService';
-import DocumentService from '../services/DocumentService';
+import GroupService from '../../services/groupService';
+import UserService from '../../services/userService';
+import DocumentService from '../../services/documentService';
 
 const GroupDashboard = ({ groupId }) => {
     const [groupName, setGroupName] = useState('');

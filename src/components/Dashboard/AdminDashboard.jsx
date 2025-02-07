@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import userService from '../../services/userService';
 import groupService from '../../services/groupService';
 import documentService from '../../services/documentService';
 import adminService from '../../services/adminService';
 
 function AdminDashboard() {
+    const navigate = useNavigate();
+
     const [userData, setUserData] = useState({
         id: '',
         username: '',
@@ -144,6 +147,11 @@ function AdminDashboard() {
         }
     };
 
+    //Gruppe öffnen
+    const openGroupDashboard = (groupId) => {
+        navigate(`/group/${groupId}`);
+    };
+
     return (
         <div style={styles.container}>
             {/* Persönliche Daten */}
@@ -199,7 +207,15 @@ function AdminDashboard() {
                     {groups
                         .filter((group) => group.groupName.toLowerCase().includes(groupSearch.toLowerCase()))
                         .map((group) => (
-                            <li key={group.id}>{group.groupName}</li>
+                            <li key={group.id}>
+                                {/* Gruppenname als klickbarer Button */}
+                                <button
+                                    style={styles.groupButton}
+                                    onClick={() => openGroupDashboard(group.id)}
+                                >
+                                    {group.groupName}
+                                </button>
+                            </li>
                         ))}
                 </ul>
                 <input
@@ -293,6 +309,16 @@ const styles = {
         border: 'none',
         cursor: 'pointer',
         borderRadius: '5px',
+    },
+    groupButton: {
+        padding: '10px',
+        backgroundColor: '#28a745',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+        borderRadius: '5px',
+        width: '100%',
+        textAlign: 'left',
     }
 };
 
