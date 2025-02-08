@@ -6,7 +6,7 @@ const API_BASE_URL = 'http://localhost:8080/admin'; // Basis-URL für Auth-Endpo
 export const getAllUsers = async () => {
     try {
         const response = await axios.get(`${API_BASE_URL}/users`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         console.log('Userliste aus Response: ', response.data);
         return response.data; // Liste der Benutzer
@@ -18,7 +18,7 @@ export const getAllUsers = async () => {
 // Neuen Benutzer als Admin erstellen
 export const createUser = async (username, password) => {
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             throw 'Kein Token gefunden. Bitte erneut anmelden.';
         }

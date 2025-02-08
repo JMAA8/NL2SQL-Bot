@@ -8,7 +8,7 @@ const API_BASE_URL_Admin = 'http://localhost:8080/admin'; //Basis-URL für admin
 
 // Benutzerprofil abrufen
 export const getUserProfile = async () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
     }
@@ -17,7 +17,7 @@ export const getUserProfile = async () => {
     console.log('userService - getUserProfil - userId: ', userId)
     try {
         const response = await axios.get(`${API_BASE_URL}/profile/${userId}`, {
-            headers: {Authorization: `Bearer ${localStorage.getItem('token')}`},
+            headers: {Authorization: `Bearer ${sessionStorage.getItem('token')}`},
         });
         console.log('userService - getUserProfil - Response: ', response.data);
         return response.data; // Benutzerprofil zurückgeben
@@ -29,7 +29,7 @@ export const getUserProfile = async () => {
 
 // Benutzerprofil aktualisieren
 export const updateUserProfile = async (updatedUser) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
     }
@@ -41,7 +41,7 @@ export const updateUserProfile = async (updatedUser) => {
             `${API_BASE_URL}/updateProfile/{userId}`,
             updatedUser,
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         return response.data; // Erfolgsnachricht
@@ -54,7 +54,7 @@ export const updateUserProfile = async (updatedUser) => {
 export const deleteUser = async (userId) => {
     try {
         const response = await axios.delete(`${API_BASE_URL_Admin}/${userId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Erfolgsnachricht
     } catch (error) {
@@ -70,7 +70,7 @@ export const addRoleToUser = async (userId, roleName) => {
             {},
             {
                 params: { roleName },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         return response.data; // Erfolgsnachricht
@@ -84,7 +84,7 @@ export const removeRoleFromUser = async (userId, roleName) => {
     try {
         const response = await axios.delete(`${API_BASE_URL}/${userId}/remove-role`, {
             params: { roleName },
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Erfolgsnachricht
     } catch (error) {

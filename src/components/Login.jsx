@@ -26,8 +26,8 @@ const Login = () => {
             console.log('Benutzer-ID:', userId);
             console.log('Benutzer-Rolle:', userRole);
 
-            // Token im LocalStorage speichern
-            localStorage.setItem('token', response.token);
+            // Token im sessionStorage speichern
+            sessionStorage.setItem('token', response.token);
 
             // Weiterleitung zur Chat-Seite
             navigate('/chat');

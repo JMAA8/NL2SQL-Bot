@@ -5,7 +5,7 @@ const API_BASE_URL = 'http://localhost:8080/chat'; // Basis-URL für Chat-Endpoi
 
 // Hilfsfunktion zum Dekodieren des Tokens und Abrufen der Benutzer-ID
 const getUserIdFromToken = () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
     }
@@ -19,7 +19,7 @@ export const getUserChats = async () => {
         const userId = getUserIdFromToken();
        console.log('ChatService -getUserChats - UserID:', userId);
         const response = await axios.get(`${API_BASE_URL}/user/${userId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         console.log('ChatService - getUserChats - Nach Controller aufruf');
         console.log('ChatService - getUserChats - Response: ', response.data);
@@ -34,7 +34,7 @@ export const getUserChats = async () => {
 export const getChatMessages = async (chatId) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/${chatId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Liste der Nachrichten des Chats
     } catch (error) {
@@ -54,7 +54,7 @@ export const sendMessage = async (chatId, prompt) => {
             `${API_BASE_URL}/message`,
             { userId, chatId, prompt },
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         console.log('sendMessage - Backendversuch erfolgreich');
@@ -76,7 +76,7 @@ export const updateChatTitle = async (chatId, newTitle) => {
             { newTitle }, // Neuer Titel als JSON-Body
             {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${sessionStorage.getItem('token')}`,
                     'Content-Type': 'application/json', // Content-Type angeben
                 },
             }
@@ -94,7 +94,7 @@ export const updateChatTitle = async (chatId, newTitle) => {
 export const deleteChat = async (chatId) => {
     try {
         await axios.delete(`${API_BASE_URL}/${chatId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
     } catch (error) {
         console.error(`Fehler beim Löschen des Chats ${chatId}:`, error);

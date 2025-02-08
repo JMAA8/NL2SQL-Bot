@@ -8,8 +8,8 @@ export const login = async (username, password) => {
         console.log('Methode login im authService try');
         const response = await axios.post(`${API_BASE_URL}/login`, { username, password });
         console.log('authService: Erhaltenes Token:', response.data);
-        // Token im localStorage speichern
-        localStorage.setItem('token', response.data.token);
+        // Token im sessionStorage speichern
+        sessionStorage.setItem('token', response.data.token);
         return response.data; // Enthält das Token
     } catch (error) {
         throw error.response?.data || 'Login fehlgeschlagen.';
@@ -40,7 +40,7 @@ export const validateToken = async (token) => {
 
 // Logout-Service (lokal)
 export const logout = () => {
-    localStorage.removeItem('token'); // Entfernt das Token aus dem lokalen Speicher
+    sessionStorage.removeItem('token'); // Entfernt das Token aus dem lokalen Speicher
 };
 
 export default {

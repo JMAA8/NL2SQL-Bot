@@ -4,7 +4,7 @@ import {jwtDecode} from "jwt-decode";
 const API_BASE_URL = 'http://localhost:8080/groups'; // Basis-URL für Gruppen-Endpoints
 
 const getUserIdFromToken = () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
     }
@@ -16,7 +16,7 @@ const getUserIdFromToken = () => {
 export const getAllGroups = async () => {
     try {
         const response = await axios.get(API_BASE_URL, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Liste der Gruppen
     } catch (error) {
@@ -33,7 +33,7 @@ export const createGroup = async (groupNameCreated, groupPasswordCreated) => {
             API_BASE_URL,
             { groupNameCreated, ownerIdCreated, groupPasswordCreated },
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         return response.data; // Erfolgsnachricht
@@ -49,7 +49,7 @@ export const addUserToGroup = async (groupId, userId) => {
             `${API_BASE_URL}/${groupId}/add-user/${userId}`,
             {},
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         return response.data; // Erfolgsnachricht
@@ -65,7 +65,7 @@ export const removeUserFromGroup = async (groupId, userId) => {
             `${API_BASE_URL}/${groupId}/remove-user/${userId}`,
             {},
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             }
         );
         return response.data; // Erfolgsnachricht
@@ -78,7 +78,7 @@ export const removeUserFromGroup = async (groupId, userId) => {
 export const deleteGroup = async (groupId) => {
     try {
         const response = await axios.delete(`${API_BASE_URL}/${groupId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Erfolgsnachricht
     } catch (error) {
@@ -91,7 +91,7 @@ export const getJoinedGroups = async () => {
     const userId = getUserIdFromToken();
     try {
         const response = await axios.get(`${API_BASE_URL}/joined/${userId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data; // Liste der Gruppen, denen der Benutzer angehört
     } catch (error) {

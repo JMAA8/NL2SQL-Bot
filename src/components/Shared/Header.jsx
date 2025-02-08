@@ -4,11 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 
 function Header() {
     const navigate = useNavigate();
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
 
     const handleLogout = () => {
-        localStorage.removeItem('token'); // Token löschen
-        localStorage.removeItem('role');  // Rolle löschen
+        sessionStorage.removeItem('token'); // Token löschen
+        sessionStorage.removeItem('role');  // Rolle löschen
         navigate('/login'); // Weiterleitung zur Login-Seite
     };
 

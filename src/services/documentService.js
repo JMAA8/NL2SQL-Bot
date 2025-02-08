@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode";
 const API_BASE_URL = 'http://localhost:8080/api/documents';
 
 const getUserIdFromToken = () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
         throw new Error('Token nicht gefunden. Bitte melden Sie sich erneut an.');
     }
@@ -17,7 +17,7 @@ export const getUserDocuments = async () => {
     const userId = getUserIdFromToken();
     try {
         const response = await axios.get(`${API_BASE_URL}/${userId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data;
     } catch (error) {
@@ -36,7 +36,7 @@ export const uploadDocument = async (file) => {
     try {
         await axios.post(API_BASE_URL, formData, {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                Authorization: `Bearer ${sessionStorage.getItem('token')}`,
                 'Content-Type': 'multipart/form-data',
             },
         });
@@ -50,7 +50,7 @@ export const uploadDocument = async (file) => {
 export const searchDocuments = async (userId, query) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/${userId}?search=${query}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         return response.data;
     } catch (error) {
@@ -64,7 +64,7 @@ export const deleteDocument = async (documentId) => {
     console.log("documentService - DocumentId: ", documentId);
     try {
         await axios.delete(`${API_BASE_URL}/${documentId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
         console.log("documentService - Document gelöscht")
     } catch (error) {
