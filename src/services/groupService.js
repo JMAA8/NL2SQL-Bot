@@ -98,7 +98,17 @@ export const getJoinedGroups = async () => {
         throw error.response?.data || 'Fehler beim Abrufen der beigetretenen Gruppen.';
     }
 };
-
+export const checkIfUserIsOwner = async (groupId, userId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/${groupId}/isOwner`, {
+            params: { userId },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+        });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || 'Fehler beim Überprüfen des Owner-Status.';
+    }
+};
 export default {
     getAllGroups,
     createGroup,
@@ -106,4 +116,5 @@ export default {
     removeUserFromGroup,
     deleteGroup,
     getJoinedGroups,
+    checkIfUserIsOwner
 };
