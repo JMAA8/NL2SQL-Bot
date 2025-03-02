@@ -109,6 +109,20 @@ export const checkIfUserIsOwner = async (groupId, userId) => {
         throw error.response?.data || 'Fehler beim Überprüfen des Owner-Status.';
     }
 };
+
+// Gruppen-Suche nach Name oder ID
+export const searchGroups = async (query) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/search`, {
+            params: { query },
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Fehler bei der Gruppensuche:', error);
+        throw error.response?.data || 'Fehler bei der Gruppensuche.';
+    }
+};
 export default {
     getAllGroups,
     createGroup,
