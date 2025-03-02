@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import userService from '../../services/userService';
 import groupService from '../../services/groupService';
 import documentService from '../../services/documentService';
+import nextcloudService from '../../services/nextcloudService';
 
 function BasicUserDashboard() {
     const [userData, setUserData] = useState({
@@ -134,6 +135,19 @@ function BasicUserDashboard() {
         }
     };
 
+    //Nextcloud
+    //Nextcloud-Anmeldung
+
+        const LoginNextcloud = async () => {
+            const loginUrl = await nextcloudService.getLoginUrl();
+            console.log(loginUrl)
+            if (loginUrl) {
+                window.open(loginUrl, "_blank");
+            }
+        };
+
+
+
     return (
         <div style={styles.container}>
             {/* Persönliche Daten */}
@@ -143,6 +157,10 @@ function BasicUserDashboard() {
                 <p><strong>Password:</strong> {userData.password}</p>
                 <p><strong>Role:</strong> {userData.role}</p>
                 <p><strong>E-Mail:</strong> {userData.email}</p>
+                <h3>Nextcloud:</h3>
+                <button onClick={LoginNextcloud} style={styles.button}>
+                    Nextcloud verbinden
+                </button>
             </div>
 
             {/* Dokumente */}
