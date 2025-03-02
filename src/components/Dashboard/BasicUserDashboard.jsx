@@ -137,7 +137,6 @@ function BasicUserDashboard() {
 
     //Nextcloud
     //Nextcloud-Anmeldung
-
         const LoginNextcloud = async () => {
             const loginUrl = await nextcloudService.getLoginUrl();
             console.log(loginUrl)
