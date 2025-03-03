@@ -69,6 +69,37 @@ public class GroupService {
         groupRepository.persist(group);
     }
 
+    // Suche nach Gruppe per ID oder Name
+    public Optional<Group> findGroup(String identifier) {
+        try {
+            Long groupId = Long.parseLong(identifier);
+            return groupRepository.findByIdOptional(groupId);
+        } catch (NumberFormatException e) {
+            return groupRepository.find("groupName", identifier).firstResultOptional();
+        }
+    }
+
+    // Gruppe beitreten, wenn Passwort stimmt
+    public boolean joinGroup(Long groupId, String username, String password) {
+        System.out.println("GroupService - joinGroup - groupId: " + groupId);
+        Optional<Group> groupOpt = groupRepository.findByIdOptional(groupId);
+        Optional<User> userOpt = userRepository.find("username", username).firstResultOptional();
+
+        if (groupOpt.isPresent() && userOpt.isPresent()) {
+            Group group = groupOpt.get();
+            User user = userOpt.get();
+
+            // Passwort prüfen
+            if (group.getPassword().equals(password)) {
+                group.getMembers().add(user);
+                groupRepository.persist(group);
+                return true;
+            }
+        }
+        return false;
+    }
+
+   /*
     @Transactional
     public boolean joinGroup(Long userId, Long groupId, String password) {
         User user = userRepository.findById(userId);
@@ -91,6 +122,8 @@ public class GroupService {
 
         return false; // Falsches Passwort
     }
+
+    */
 
     // Gruppe löschen
     public void deleteGroup(Long groupId) {

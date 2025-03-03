@@ -1,13 +1,14 @@
 package com.example.chatbot.repository;
 
 import com.example.chatbot.entityMongoDB.ChatMessage;
+import com.example.chatbot.nextcloud.NextCloudController;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 
 @ApplicationScoped
-public class ChatMessageRepository implements PanacheMongoRepository<ChatMessage> {
+public  class ChatMessageRepository  implements PanacheMongoRepository<ChatMessage> {
 
     // Nachrichten basierend auf der Chat-ID abrufen
     public List<ChatMessage> findMessagesByChatId(String chatId) {

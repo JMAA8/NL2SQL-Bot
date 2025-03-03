@@ -1,6 +1,7 @@
 package com.example.chatbot.controller;
 
 import com.example.chatbot.DTO.GroupCreate;
+import com.example.chatbot.DTO.GroupJoinRequest;
 import com.example.chatbot.entity.Group;
 import com.example.chatbot.entity.User;
 import com.example.chatbot.service.GroupService;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Path("/groups")
 @Produces(MediaType.APPLICATION_JSON)
@@ -87,6 +89,7 @@ public class GroupController {
         return Response.ok(groups).build();
     }
 
+    /*
     @POST
     @Path("/join")
     public Response joinGroup(Map<String, String> joinData) {
@@ -99,6 +102,37 @@ public class GroupController {
             return Response.ok("Gruppe erfolgreich beigetreten").build();
         }
         return Response.status(Response.Status.FORBIDDEN).entity("Falsches Passwort oder Gruppe nicht gefunden").build();
+    }
+     */
+
+    // Suche nach Gruppe per ID oder Name
+    @GET
+    @Path("/search/{identifier}")
+    public Response searchGroup(@PathParam("identifier") String identifier) {
+        Optional<Group> group = groupService.findGroup(identifier);
+        return group.map(Response::ok)
+                .orElse(Response.status(Response.Status.NOT_FOUND))
+                .build();
+    }
+
+    // Gruppe mit Passwort beitreten
+    @POST
+    @Path("/join")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response joinGroup(GroupJoinRequest request) {
+        System.out.println("Join Request erhalten: groupId=" + request.groupId + ", username=" + request.username);
+
+        if (request.groupId == null || request.username == null || request.password == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehlende Parameter!").build();
+        }
+
+        boolean success = groupService.joinGroup(request.groupId, request.username, request.password);
+
+        if (success) {
+            return Response.ok("Beitritt erfolgreich!").build();
+        } else {
+            return Response.status(Response.Status.UNAUTHORIZED).entity("Falsches Passwort oder Gruppe nicht gefunden!").build();
+        }
     }
 
     // Alle Gruppen abrufen

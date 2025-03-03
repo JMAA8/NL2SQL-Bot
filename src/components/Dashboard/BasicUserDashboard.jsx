@@ -12,6 +12,7 @@ function BasicUserDashboard() {
         email: 'Nicht verfügbar',
         role: 'Keine Rolle'
     });
+
     const [documents, setDocuments] = useState([]);
     const [documentSearch, setDocumentSearch] = useState('');
     const [newDocument, setNewDocument] = useState(null);
@@ -20,6 +21,7 @@ function BasicUserDashboard() {
     const [groupSearch, setGroupSearch] = useState('');
     const [groupPassword, setGroupPassword] = useState('');
     const [selectedGroup, setSelectedGroup] = useState(null);
+    const [message, setMessage] = useState("");
 
     useEffect(() => {
         fetchUserData();
@@ -27,7 +29,7 @@ function BasicUserDashboard() {
         fetchJoinedGroups();
     }, []);
 
-// Benutzerdaten abrufen
+    // Benutzerdaten abrufen
     const fetchUserData = async () => {
         try {
             const user = await userService.getUserProfile();
@@ -47,7 +49,6 @@ function BasicUserDashboard() {
             console.error('Fehler beim Abrufen der Benutzerdaten:', error);
         }
     };
-
 
     //Dokumente abrufen
     const fetchUserDocuments = async () => {
@@ -69,22 +70,6 @@ function BasicUserDashboard() {
         }
     };
 
-    //Gruppen abrufen
-    const fetchJoinedGroups = async () => {
-        try {
-            const userGroups = await groupService.getJoinedGroups();
-            console.log("userGroups: ", userGroups);
-
-            if (!userGroups || userGroups.length === 0) {
-                setGroups([{ id: "no-groups", groupName: "Noch keiner Gruppe beigetreten" }]);
-            } else {
-                setGroups(userGroups);
-            }
-        } catch (error) {
-            console.error('Fehler beim Abrufen der Gruppen:', error);
-        }
-    };
-
     //Dokumentensuche
     const filteredDocuments = documents.filter(doc =>
         doc.name.toLowerCase().includes(documentSearch.toLowerCase())
@@ -102,50 +87,73 @@ function BasicUserDashboard() {
         }
     };
 
-    //Gruppen-Suche
-    const handleGroupSearch = async () => {
-        try {
-            const searchResults = await groupService.searchGroups(groupSearch);
-            setGroups(searchResults);
-        } catch (error) {
-            console.error('Fehler bei der Gruppensuche:', error);
-        }
-    };
 
-    //Gruppe beitreten
-    const handleJoinGroup = async () => {
-        if (!selectedGroup || !groupPassword) return;
-        try {
-            await groupService.joinGroup(selectedGroup.id, groupPassword);
-            fetchJoinedGroups();
-            setGroupPassword('');
-        } catch (error) {
-            console.error('Fehler beim Beitritt zur Gruppe:', error);
-        }
-    };
-
-    // Dokument löschen
+    // 🔹 Dokument löschen
     const handleDeleteDocument = async (documentId) => {
         try {
             await documentService.deleteDocument(documentId);
-            console.log("AdminDashboard - Document ist erfolgreich gelöscht")
             fetchUserDocuments();
         } catch (error) {
             console.error('Fehler beim Löschen des Dokuments:', error);
         }
     };
 
-    //Nextcloud
-    //Nextcloud-Anmeldung
-        const LoginNextcloud = async () => {
-            const loginUrl = await nextcloudService.getLoginUrl();
-            console.log(loginUrl)
-            if (loginUrl) {
-                window.open(loginUrl, "_blank");
-            }
-        };
+
+    // 🔹 Gruppen abrufen
+    const fetchJoinedGroups = async () => {
+        try {
+            const userGroups = await groupService.getJoinedGroups();
+            setGroups(userGroups.length ? userGroups : [{ id: "no-groups", groupName: "Noch keiner Gruppe beigetreten" }]);
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Gruppen:', error);
+        }
+    };
+
+    // 🔹 Gruppen-Suche
+    const handleGroupSearch = async () => {
+        try {
+            const searchResults = await groupService.searchGroup(groupSearch);
+            setGroups(searchResults);
+        } catch (error) {
+            console.error('Fehler bei der Gruppensuche:', error);
+        }
+    };
+
+    // 🔹 Gruppenbeitritt mit Passwort
+    const handleJoinGroup = async () => {
+        if (!selectedGroup) {
+            console.error("Keine Gruppe ausgewählt.");
+            return;
+        }
+        if (!groupPassword || groupPassword.trim() === "") {
+            console.error("Kein Passwort eingegeben!");
+            setMessage("Bitte ein Passwort eingeben.");
+            return;
+        }
+
+        try {
+            const result = await groupService.joinGroup(selectedGroup.id, userData.username, groupPassword);
+            setMessage(result);
+            fetchJoinedGroups(); // Aktualisiere Gruppenliste
+            setGroupPassword('');
+        } catch (error) {
+            console.error('Fehler beim Beitritt zur Gruppe:', error);
+            setMessage("Fehler beim Beitritt!");
+        }
+    };
 
 
+
+
+
+
+    // 🔹 Nextcloud Anmeldung
+    const LoginNextcloud = async () => {
+        const loginUrl = await nextcloudService.getLoginUrl();
+        if (loginUrl) {
+            window.open(loginUrl, "_blank");
+        }
+    };
 
     return (
         <div style={styles.container}>
@@ -181,8 +189,8 @@ function BasicUserDashboard() {
 
                 <ul>
                     {filteredDocuments.map((doc) => (
-                        <li key={doc.id}>{doc.name}
-
+                        <li key={doc.id}>
+                            {doc.name}
                             <button onClick={() => handleDeleteDocument(doc.id)} style={styles.deleteButton}>🗑️</button>
                         </li>
                     ))}
@@ -200,12 +208,13 @@ function BasicUserDashboard() {
                     style={styles.input}
                 />
                 <button onClick={handleGroupSearch} style={styles.button}>🔍</button>
+
                 <ul>
-                    {groups.map((group) => (
+                    {groups?.map((group) => (
                         <li key={group.id} onClick={() => setSelectedGroup(group)}>
                             {group.groupName}
                         </li>
-                    ))}
+                    )) || <p>Keine Gruppen gefunden</p>}
                 </ul>
 
                 {/* Gruppenbeitritt */}
@@ -222,51 +231,21 @@ function BasicUserDashboard() {
                         <button onClick={handleJoinGroup} style={styles.button}>Join</button>
                     </div>
                 )}
+                {message && <p style={styles.message}>{message}</p>}
             </div>
         </div>
     );
 }
 
 const styles = {
-    container: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '20px',
-        padding: '20px',
-    },
-    section: {
-        border: '1px solid #ccc',
-        padding: '15px',
-        borderRadius: '8px',
-    },
-    input: {
-        width: '95%',
-        padding: '8px',
-        marginBottom: '10px',
-    },
-    uploadInput: {
-        marginRight: '10px',
-    },
-    button: {
-        padding: '10px',
-        backgroundColor: '#007bff',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '5px',
-    },
-    joinGroupContainer: {
-        marginTop: '10px',
-    },
-
-    deleteButton: {
-        marginLeft: '10px',
-        backgroundColor: '#ff4d4d',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '5px',
-    }
+    container: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', padding: '20px' },
+    section: { border: '1px solid #ccc', padding: '15px', borderRadius: '8px' },
+    input: { width: '95%', padding: '8px', marginBottom: '10px' },
+    uploadInput: { marginRight: '10px' },
+    button: { padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
+    joinGroupContainer: { marginTop: '10px' },
+    message: { color: 'blue', fontWeight: 'bold', marginTop: '10px' },
+    deleteButton: { marginLeft: '10px', backgroundColor: '#ff4d4d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' }
 };
 
 export default BasicUserDashboard;

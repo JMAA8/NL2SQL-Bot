@@ -109,8 +109,53 @@ export const checkIfUserIsOwner = async (groupId, userId) => {
         throw error.response?.data || 'Fehler beim Überprüfen des Owner-Status.';
     }
 };
+export const searchGroup = async (identifier) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/search/${identifier}`);
+        if (!response.ok) throw new Error("Gruppe nicht gefunden");
+
+        const data = await response.json();
+        console.log("Suchergebnisse:", data);
+
+        // Falls die API nur ein Objekt zurückgibt, wandle es in ein Array um
+        return Array.isArray(data) ? data : [data];
+
+    } catch (error) {
+        console.error("Fehler beim Suchen der Gruppe:", error);
+        return [];
+    }
+};
+
+export const joinGroup = async (groupId, username, password) => {
+    console.log("Join Request:", { groupId, username, password });
+
+    if (!groupId) {
+        console.error("FEHLER: groupId ist undefined oder null!");
+        return "Fehler: Ungültige Gruppen-ID!";
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/join`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ groupId, username, password }) // JSON-Body senden
+        });
+
+        if (!response.ok) throw new Error(`Fehler beim Beitritt: ${response.statusText}`);
+
+        return await response.text();
+    } catch (error) {
+        console.error("Fehler beim Beitritt:", error);
+        return "Fehler";
+    }
+};
+
 
 // Gruppen-Suche nach Name oder ID
+/*
 export const searchGroups = async (query) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/search`, {
@@ -123,6 +168,8 @@ export const searchGroups = async (query) => {
         throw error.response?.data || 'Fehler bei der Gruppensuche.';
     }
 };
+
+ */
 export default {
     getAllGroups,
     createGroup,
@@ -130,5 +177,7 @@ export default {
     removeUserFromGroup,
     deleteGroup,
     getJoinedGroups,
-    checkIfUserIsOwner
+    checkIfUserIsOwner,
+    searchGroup,
+    joinGroup
 };
