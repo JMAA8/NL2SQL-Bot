@@ -132,7 +132,7 @@ function BasicUserDashboard() {
         }
 
         try {
-            const result = await groupService.joinGroup(selectedGroup.id, userData.username, groupPassword);
+            const result = await groupService.joinGroup(selectedGroup.id, groupPassword);
             setMessage(result);
             fetchJoinedGroups(); // Aktualisiere Gruppenliste
             setGroupPassword('');

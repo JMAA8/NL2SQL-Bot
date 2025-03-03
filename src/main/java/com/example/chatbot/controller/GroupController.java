@@ -1,6 +1,7 @@
 package com.example.chatbot.controller;
 
 import com.example.chatbot.DTO.GroupCreate;
+import com.example.chatbot.DTO.GroupDTO;
 import com.example.chatbot.DTO.GroupJoinRequest;
 import com.example.chatbot.entity.Group;
 import com.example.chatbot.entity.User;
@@ -82,10 +83,7 @@ public class GroupController {
     @GET
     @Path("/joined/{userId}")
     public Response getJoinedGroups(@PathParam("userId") Long userId) {
-        List<Group> groups = groupService.getGroupsByUserId(userId);
-        if (groups.isEmpty()) {
-            System.out.println("GroupController - joined - Keiner Gruppe beigetreten");
-        }
+        List<GroupDTO> groups = groupService.getGroupsByUserId(userId);
         return Response.ok(groups).build();
     }
 
@@ -120,13 +118,13 @@ public class GroupController {
     @Path("/join")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response joinGroup(GroupJoinRequest request) {
-        System.out.println("Join Request erhalten: groupId=" + request.groupId + ", username=" + request.username);
+        System.out.println("Join Request erhalten: groupId=" + request.groupId + ", username=" + request.userId);
 
-        if (request.groupId == null || request.username == null || request.password == null) {
+        if (request.groupId == null || request.userId == null || request.password == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehlende Parameter!").build();
         }
 
-        boolean success = groupService.joinGroup(request.groupId, request.username, request.password);
+        boolean success = groupService.joinGroup(request.groupId, request.userId, request.password);
 
         if (success) {
             return Response.ok("Beitritt erfolgreich!").build();
@@ -139,8 +137,10 @@ public class GroupController {
     @GET
     @RolesAllowed({"ADMIN"})
     public Response getAllGroups() {
-        return Response.ok(groupService.getAllGroups()).build();
+        List<GroupDTO> groups = groupService.getAllGroups();
+        return Response.ok(groups).build();
     }
+
 
     // Gruppe und Mitglieder abrufen
     @GET

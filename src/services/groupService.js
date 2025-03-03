@@ -126,8 +126,9 @@ export const searchGroup = async (identifier) => {
     }
 };
 
-export const joinGroup = async (groupId, username, password) => {
-    console.log("Join Request:", { groupId, username, password });
+export const joinGroup = async (groupId, password) => {
+    console.log("Join Request:", { groupId, password });
+    const userId = getUserIdFromToken();
 
     if (!groupId) {
         console.error("FEHLER: groupId ist undefined oder null!");
@@ -141,7 +142,7 @@ export const joinGroup = async (groupId, username, password) => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${sessionStorage.getItem('token')}`
             },
-            body: JSON.stringify({ groupId, username, password }) // JSON-Body senden
+            body: JSON.stringify({ groupId, userId, password }) // JSON-Body senden
         });
 
         if (!response.ok) throw new Error(`Fehler beim Beitritt: ${response.statusText}`);
@@ -154,22 +155,6 @@ export const joinGroup = async (groupId, username, password) => {
 };
 
 
-// Gruppen-Suche nach Name oder ID
-/*
-export const searchGroups = async (query) => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/search`, {
-            params: { query },
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        return response.data;
-    } catch (error) {
-        console.error('Fehler bei der Gruppensuche:', error);
-        throw error.response?.data || 'Fehler bei der Gruppensuche.';
-    }
-};
-
- */
 export default {
     getAllGroups,
     createGroup,

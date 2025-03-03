@@ -1,8 +1,11 @@
 package com.example.chatbot.service;
 
+import com.example.chatbot.DTO.GroupDTO;
 import com.example.chatbot.entity.Group;
+import com.example.chatbot.entity.GroupUser;
 import com.example.chatbot.entity.User;
 import com.example.chatbot.repository.GroupRepository;
+import com.example.chatbot.repository.GroupUserRepository;
 import com.example.chatbot.repository.UserRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,6 +14,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class GroupService {
@@ -21,15 +25,18 @@ public class GroupService {
     @Inject
     UserRepository userRepository;
 
+    @Inject
+    GroupUserRepository groupUserRepository;
+
     // Gruppe erstellen
     @Transactional
     public Group createGroup(String groupName, Long ownerId, String password) {
-        System.out.println(
-                "GroupService - create - " + groupName + "/ " + ownerId + "/ "+ password
-        );
+        System.out.println("GroupService - create - " + groupName + "/ " + ownerId + "/ "+ password);
+
         if (ownerId == null) {
             throw new IllegalArgumentException("Owner ID ist null!");
         }
+
         User owner = userRepository.findById(ownerId);
         if (owner == null) {
             throw new IllegalArgumentException("Besitzer nicht gefunden.");
@@ -40,10 +47,12 @@ public class GroupService {
         group.setOwner(owner);
         group.setPassword(password);
         groupRepository.persist(group);
+
         return group;
     }
 
     // Benutzer zu einer Gruppe hinzufügen
+    @Transactional
     public void addUserToGroup(Long groupId, Long userId) {
         Group group = groupRepository.findById(groupId);
         User user = userRepository.findById(userId);
@@ -52,21 +61,23 @@ public class GroupService {
             throw new IllegalArgumentException("Gruppe oder Benutzer nicht gefunden.");
         }
 
-        group.getMembers().add(user);
-        groupRepository.persist(group);
+        GroupUser groupUser = new GroupUser();
+        groupUser.setGroup(group);
+        groupUser.setUser(user);
+
+        groupUserRepository.persist(groupUser);
     }
 
     // Benutzer aus einer Gruppe entfernen
+    @Transactional
     public void removeUserFromGroup(Long groupId, Long userId) {
-        Group group = groupRepository.findById(groupId);
-        User user = userRepository.findById(userId);
+        Optional<GroupUser> groupUserOpt = groupUserRepository.find("group.id = ?1 and user.id = ?2", groupId, userId).firstResultOptional();
 
-        if (group == null || user == null) {
-            throw new IllegalArgumentException("Gruppe oder Benutzer nicht gefunden.");
+        if (groupUserOpt.isPresent()) {
+            groupUserRepository.delete(groupUserOpt.get());
+        } else {
+            throw new IllegalArgumentException("Benutzer nicht in dieser Gruppe.");
         }
-
-        group.getMembers().remove(user);
-        groupRepository.persist(group);
     }
 
     // Suche nach Gruppe per ID oder Name
@@ -80,52 +91,56 @@ public class GroupService {
     }
 
     // Gruppe beitreten, wenn Passwort stimmt
-    public boolean joinGroup(Long groupId, String username, String password) {
-        System.out.println("GroupService - joinGroup - groupId: " + groupId);
-        Optional<Group> groupOpt = groupRepository.findByIdOptional(groupId);
-        Optional<User> userOpt = userRepository.find("username", username).firstResultOptional();
-
-        if (groupOpt.isPresent() && userOpt.isPresent()) {
-            Group group = groupOpt.get();
-            User user = userOpt.get();
-
-            // Passwort prüfen
-            if (group.getPassword().equals(password)) {
-                group.getMembers().add(user);
-                groupRepository.persist(group);
-                return true;
-            }
-        }
-        return false;
-    }
-
-   /*
     @Transactional
-    public boolean joinGroup(Long userId, Long groupId, String password) {
-        User user = userRepository.findById(userId);
-        Group group = groupRepository.findById(groupId);
+    public boolean joinGroup(Long groupId, Long userId, String password) {
+        System.out.println("GroupService - joinGroup - groupId: " + groupId + ", userId: " + userId);
 
-        if (group == null || user == null) {
+        if (groupId == null || userId == null) {
+            throw new IllegalArgumentException("groupId und userId dürfen nicht null sein");
+        }
+
+        Optional<Group> groupOpt = groupRepository.findByIdOptional(groupId);
+        if (groupOpt.isEmpty()) {
+            System.out.println("Gruppe nicht gefunden mit ID: " + groupId);
             return false;
         }
 
-        // Prüfen, ob der User bereits in der Gruppe ist
-        if (group.getMembers().contains(user)) {
-            return true;
+        Group group = groupOpt.get();
+
+        // Prüfe Passwort
+        if (!group.getPassword().equals(password)) {
+            System.out.println("Falsches Passwort für Gruppe: " + group.getGroupName());
+            return false;
         }
 
-        // Passwort überprüfen
-        if (group.getPassword().equals(password)) {
-            group.getMembers().add(user);
-            return true;
+        Optional<User> userOpt = userRepository.findByIdOptional(userId);
+        if (userOpt.isEmpty()) {
+            System.out.println("User nicht gefunden mit ID: " + userId);
+            return false;
         }
 
-        return false; // Falsches Passwort
+        User user = userOpt.get();
+
+        // Überprüfen, ob der Benutzer bereits in der Gruppe ist
+        Optional<GroupUser> existingMembership = groupUserRepository.find("group.id = ?1 and user.id = ?2", groupId, userId)
+                .firstResultOptional();
+        if (existingMembership.isPresent()) {
+            System.out.println("User ist bereits Mitglied der Gruppe.");
+            return false;
+        }
+
+        // Benutzer zur Gruppe hinzufügen
+        GroupUser newMembership = new GroupUser();
+        newMembership.setGroup(group);
+        newMembership.setUser(user);
+        groupUserRepository.persist(newMembership);
+
+        System.out.println("User erfolgreich zur Gruppe hinzugefügt.");
+        return true;
     }
 
-    */
-
     // Gruppe löschen
+    @Transactional
     public void deleteGroup(Long groupId) {
         Group group = groupRepository.findById(groupId);
         if (group == null) {
@@ -139,13 +154,20 @@ public class GroupService {
         return Optional.ofNullable(groupRepository.findById(groupId));
     }
 
+    // Alle Gruppen eines Users abrufen (mit richtiger Query)
     @Transactional
-    public List<Group> getGroupsByUserId(Long userId) {
-        return groupRepository.findGroupsByUserId(userId);
+    public List<GroupDTO> getGroupsByUserId(Long userId) {
+        return groupRepository.getEntityManager().createQuery(
+                        "SELECT NEW com.example.chatbot.DTO.GroupDTO(g.id, g.groupName) FROM Group g JOIN g.members gu WHERE gu.user.id = :userId", GroupDTO.class)
+                .setParameter("userId", userId)
+                .getResultList();
     }
 
+
     // Alle Gruppen abrufen
-    public List<Group> getAllGroups() {
-        return groupRepository.listAll();
+    public List<GroupDTO> getAllGroups() {
+        return groupRepository.listAll().stream()
+                .map(group -> new GroupDTO(group.getId(), group.getGroupName()))
+                .collect(Collectors.toList());
     }
 }

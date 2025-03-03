@@ -15,17 +15,11 @@ public class Group {
     @Column(unique = true, nullable = false)
     private String groupName;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false) // Nicht unique, um mehrere Gruppen mit demselben Passwort zu erlauben
     private String password;
 
-
-    @ManyToMany
-    @JoinTable(
-            name = "group_users",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    private Set<User> members = new HashSet<>();
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Set<GroupUser> members = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
@@ -40,6 +34,7 @@ public class Group {
     public String getPassword() {
         return password;
     }
+
     public Long getId() {
         return id;
     }
@@ -56,11 +51,11 @@ public class Group {
         this.groupName = groupName;
     }
 
-    public Set<User> getMembers() {
+    public Set<GroupUser> getMembers() {
         return members;
     }
 
-    public void setMembers(Set<User> members) {
+    public void setMembers(Set<GroupUser> members) {
         this.members = members;
     }
 
