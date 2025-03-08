@@ -1,5 +1,6 @@
 package com.example.chatbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -15,6 +16,7 @@ public class GroupUser {
     @Id
     @ManyToOne(fetch = FetchType.EAGER) // Sofort laden, um LazyInitializationException zu vermeiden
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     public GroupUser() {}

@@ -1,5 +1,6 @@
 package com.example.chatbot.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,6 +20,7 @@ public class Group {
     private String password;
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonIgnore // Verhindert Endlosschleife in der JSON-Serialisierung
     private Set<GroupUser> members = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

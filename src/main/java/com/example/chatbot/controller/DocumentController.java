@@ -3,6 +3,7 @@ package com.example.chatbot.controller;
 import com.example.chatbot.entity.Group;
 import com.example.chatbot.entityMongoDB.Document;
 import com.example.chatbot.service.DocumentService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -66,4 +67,31 @@ public class DocumentController {
         documentService.deleteDocument(documentId);
         return Response.ok("Dokument gelöscht").build();
     }
+
+    @GET
+    @Path("/{groupId}/documents")
+    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    public Response getDocumentsByGroup(@PathParam("groupId") Long groupId) {
+        List<Document> documents = documentService.getDocumentsByGroupId(groupId);
+        return Response.ok(documents).build();
+    }
+
+    @POST
+    @Path("/{groupId}/upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    public Response uploadDocument(@PathParam("groupId") Long groupId, @MultipartForm MultipartFormDataInput input) {
+        documentService.uploadDocumentGroup(groupId, input);
+        return Response.ok("Dokument hochgeladen").build();
+    }
+
+    @DELETE
+    @Path("/documents/{documentId}")
+    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    public Response deleteDocument(@PathParam("documentId") Long documentId) {
+        documentService.deleteDocumentGroup(documentId);
+        return Response.ok("Dokument gelöscht").build();
+    }
+
+
 }

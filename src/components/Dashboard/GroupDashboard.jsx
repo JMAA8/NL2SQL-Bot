@@ -1,45 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import {jwtDecode} from "jwt-decode";
 import GroupService from '../../services/groupService';
-import UserService from '../../services/userService';
 import DocumentService from '../../services/documentService';
+import documentService from "../../services/documentService";
 
 const GroupDashboard = ({ groupId }) => {
-    const [groupName, setGroupName] = useState('');
+
+    const [groupData, setGroupData] = useState({
+        Groupname: '',
+        password: '',
+        owner: 'Nicht verfügbar'
+    });
     const [groupUsers, setGroupUsers] = useState([]);
     const [groupDocuments, setGroupDocuments] = useState([]);
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [documentSearch, setDocumentSearch] = useState('');
+    const [newDocument, setNewDocument] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isOwner, setIsOwner] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
+    console.log('GroupDashboard Id: ', groupId);
 
     useEffect(() => {
-        fetchGroupDetails();
         fetchGroupUsers();
         fetchGroupDocuments();
-        fetchCurrentUser();
+        fetchGroupDetails()
+        //fetchCurrentUser();
     }, []);
 
+    /*
     const fetchCurrentUser = async () => {
         const token = sessionStorage.getItem('token');
+        if (!token) return;
         const decoded = jwtDecode(token);
         console.log('Decoded Token: ', decoded);
-        const groups = decoded.groups || [];
-        console.log('Groups: ', groups);
-        if (!token) return;
 
         try {
-            if (groups.includes("ADMIN")){
+            if (decoded.groups?.includes("ADMIN")){
                 setIsOwner(true);
-                console.log('Current User ist ADMIN');
-            }else{
+            } else {
                 checkIfOwner(decoded.userId);
             }
         } catch (error) {
             console.error('Fehler beim Abrufen der Benutzerinformationen:', error);
         }
     };
+
 
     const checkIfOwner = async (userId) => {
         try {
@@ -50,39 +54,37 @@ const GroupDashboard = ({ groupId }) => {
         }
     };
 
+     */
+
+    //Groupdetails
+
     const fetchGroupDetails = async () => {
         try {
-            const response = await GroupService.getGroupById(groupId);
-            setGroupName(response.data.name);
+            const group = await GroupService.getGroupById(groupId);
+            console.log('Group: ', group);
+
+            const groupData = {
+                Groupname: group.name,
+                password: group.password,
+                owner: group.owner
+            };
+
+            setGroupData(group);
+
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppendetails:', error);
         }
     };
 
+
+    //Group-User-Management
     const fetchGroupUsers = async () => {
         try {
             const response = await GroupService.getUsersByGroupId(groupId);
-            setGroupUsers(response.data);
+            setGroupUsers(response.data || []); // Fallback für leere oder fehlerhafte Antworten
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppenmitglieder:', error);
-        }
-    };
-
-    const handleSearch = async () => {
-        try {
-            const response = await UserService.searchUsers(searchQuery);
-            setSearchResults(response.data);
-        } catch (error) {
-            console.error('Fehler bei der Benutzersuche:', error);
-        }
-    };
-
-    const handleAddUser = async (userId) => {
-        try {
-            await GroupService.addUserToGroup(groupId, userId);
-            fetchGroupUsers();
-        } catch (error) {
-            console.error('Fehler beim Hinzufügen des Benutzers zur Gruppe:', error);
+            setGroupUsers([]);
         }
     };
 
@@ -96,30 +98,42 @@ const GroupDashboard = ({ groupId }) => {
     };
 
 
+    //Group-Document-Management
+
+    //Dokumente abrufen
     const fetchGroupDocuments = async () => {
         try {
-            const documents = await DocumentService.getDocumentsByGroupId(groupId);
-            setGroupDocuments(documents);
+            const docs = await documentService.getDocumentsByGroupId(groupId);
+            console.log("Docs: ", docs);
+
+            if (!docs || docs.length === 0) {
+                console.log("Keine Dokumente vorhanden");
+                setGroupDocuments([{ id: "no-documents", name: "Noch keine Documents hochgeladen" }]);
+            } else {
+                setGroupDocuments(docs.map(doc => ({
+                    id: doc.id || "unknown",
+                    name: doc.documentName?.toString() || "Unbenanntes Dokument"
+                })));
+            }
         } catch (error) {
             console.error('Fehler beim Abrufen der Dokumente:', error);
         }
     };
 
-    const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
-    };
 
+    //Datei-Upload
     const uploadDocument = async () => {
-        if (!selectedFile) return;
+        if (!newDocument) return;
         try {
-            await DocumentService.uploadDocument(groupId, selectedFile);
+            await documentService.uploadDocumentGroup(newDocument, groupId);
+            setNewDocument(null);
             fetchGroupDocuments();
-            setSelectedFile(null);
         } catch (error) {
             console.error('Fehler beim Hochladen des Dokuments:', error);
         }
     };
 
+    //Datei-Löschen
     const deleteDocument = async (documentId) => {
         try {
             await DocumentService.deleteDocument(documentId);
@@ -129,39 +143,47 @@ const GroupDashboard = ({ groupId }) => {
         }
     };
 
+
+    //Dokumentensuche
+    const filteredDocuments = groupDocuments.filter(doc =>
+        doc.name.toLowerCase().includes(documentSearch.toLowerCase())
+    );
+
+
+
+
+
+
+
+
+
     return (
         <div style={{ display: 'flex', gap: '20px' }}>
             <div style={{ flex: 1 }}>
-                <h1>{groupName}</h1>
+                <h1>{groupData.Groupname}</h1>
+                <section>
+                    <h2>Gruppendetails</h2>
+                    <p><strong>Name:</strong> {groupData.Groupname}</p>
+                    <p><strong>Password:</strong> {groupData.password}</p>
+                </section>
+            </div>
+            <div style={{ flex: 1 }}>
                 <section>
                     <h2>Gruppenmitglieder</h2>
                     <ul>
-                        {groupUsers.map((user) => (
-                            <li key={user.id}>{user.username} {isOwner && <button onClick={() => handleRemoveUser(user.id)}>Entfernen</button>}</li>
-                        ))}
+                        {groupUsers.length > 0 ? (
+                            groupUsers.map((user) => (
+                                <li key={user.id}>{user.username} {isOwner &&
+                                    <button onClick={() => handleRemoveUser(user.id)}>Entfernen</button>}
+                                </li>
+                            ))
+                        ) : (
+                            <li>Keine Mitglieder gefunden</li>
+                        )}
                     </ul>
-                    {isOwner && (
-                        <div>
-                            <h2>Benutzer hinzufügen</h2>
-                            <input
-                                type="text"
-                                placeholder="ID, Name oder E-Mail"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                            <button onClick={handleSearch}>Suchen</button>
-                            <ul>
-                                {searchResults.map((user) => (
-                                    <li key={user.id}>
-                                        {user.username} ({user.email})
-                                        <button onClick={() => handleAddUser(user.id)}>Hinzufügen</button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                 </section>
             </div>
+
             <div style={{ flex: 1 }}>
                 <section>
                     <h2>Gruppendokumente</h2>
@@ -173,7 +195,7 @@ const GroupDashboard = ({ groupId }) => {
                             </li>
                         ))}
                     </ul>
-                    <input type="file" onChange={handleFileChange} />
+                    <input type="file" onChange={(e) => setNewDocument(e.target.files[0])} />
                     <button onClick={uploadDocument}>Dokument hochladen</button>
                 </section>
             </div>

@@ -73,9 +73,38 @@ export const deleteDocument = async (documentId) => {
     }
 };
 
+export const getDocumentsByGroupId = async (groupId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/${groupId}/documents`, {
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+        });
+        return response.data; // Gibt die Dokumente der Gruppe zurück
+    } catch (error) {
+        throw error.response?.data || 'Fehler beim Abrufen der Dokumente.';
+    }
+};
+export const uploadDocumentGroup = async (file, groupId) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('groupId', groupId);
+
+    try {
+        await axios.post(`${API_BASE_URL}/${groupId}/upload`, formData, {
+            headers: {
+                Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    } catch (error) {
+        console.error('Fehler beim Hochladen des Dokuments:', error);
+        throw error.response?.data || 'Fehler beim Hochladen des Dokuments.';
+    }
+};
 export default {
     getUserDocuments,
     uploadDocument,
     searchDocuments,
     deleteDocument,
+    getDocumentsByGroupId,
+    uploadDocumentGroup,
 };

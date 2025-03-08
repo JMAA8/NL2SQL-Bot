@@ -147,8 +147,25 @@ public class GroupController {
     @Path("/{groupId}")
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
     public Response getGroup(@PathParam("groupId") Long groupId) {
+        System.out.println("GroupController - getGroup");
         return groupService.getGroupById(groupId)
                 .map(group -> Response.ok(group).build())
                 .orElse(Response.status(Response.Status.NOT_FOUND).entity("Gruppe nicht gefunden.").build());
     }
+
+    @GET
+    @Path("/{groupId}/isOwner")
+    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    public Response checkIfUserIsOwner(@PathParam("groupId") Long groupId, @QueryParam("userId") Long userId) {
+        boolean isOwner = groupService.isUserOwner(groupId, userId);
+        return Response.ok(Map.of("isOwner", isOwner)).build();
+    }
+    @GET
+    @Path("/{groupId}/users")
+    @RolesAllowed({"ADMIN", "ADVANCED_USER"})
+    public Response getUsersByGroup(@PathParam("groupId") Long groupId) {
+        List<User> users = groupService.getUsersByGroupId(groupId);
+        return Response.ok(users).build();
+    }
+
 }

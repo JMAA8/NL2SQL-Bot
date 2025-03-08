@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -170,4 +171,24 @@ public class GroupService {
                 .map(group -> new GroupDTO(group.getId(), group.getGroupName()))
                 .collect(Collectors.toList());
     }
+
+    public List<User> getUsersByGroupId(Long groupId) {
+        return groupRepository.findByIdOptional(groupId)
+                .map(group -> Optional.ofNullable(group.getMembers())
+                        .orElse(Collections.emptySet())
+                        .stream()
+                        .map(GroupUser::getUser)
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList()); // Falls Gruppe nicht existiert, gib eine leere Liste zurück
+    }
+
+    public boolean isUserOwner(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId);
+        if (group == null) {
+            throw new IllegalArgumentException("Gruppe nicht gefunden.");
+        }
+        return group.getOwner().getId().equals(userId);
+    }
+
+
 }

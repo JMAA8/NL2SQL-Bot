@@ -154,12 +154,39 @@ export const joinGroup = async (groupId, password) => {
     }
 };
 
+// Eine bestimmte Gruppe abrufen
+export const getGroupById = async (groupId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/${groupId}`, {
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+        });
+        return response.data; // Gibt die Gruppe zurück
+    } catch (error) {
+        throw error.response?.data || 'Fehler beim Abrufen der Gruppendaten.';
+    }
+};
+
+// Benutzer einer Gruppe abrufen
+export const getUsersByGroupId = async (groupId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/${groupId}/users`, {
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+        });
+        return response.data; // Gibt die Benutzer der Gruppe zurück
+    } catch (error) {
+        throw error.response?.data || 'Fehler beim Abrufen der Gruppenmitglieder.';
+    }
+};
+
+
 
 export default {
     getAllGroups,
     createGroup,
     addUserToGroup,
     removeUserFromGroup,
+    getGroupById,
+    getUsersByGroupId,
     deleteGroup,
     getJoinedGroups,
     checkIfUserIsOwner,

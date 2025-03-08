@@ -1,7 +1,10 @@
 package com.example.chatbot.service;
 
+import com.example.chatbot.entity.Group;
 import com.example.chatbot.entityMongoDB.Document;
 import com.example.chatbot.repository.DocumentRepository;
+import com.example.chatbot.repository.GroupRepository;
+import com.example.chatbot.repository.GroupUserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -21,6 +24,9 @@ public class DocumentService {
 
     @Inject
     DocumentRepository documentRepository;
+
+    @Inject
+    GroupRepository groupRepository;
 
     @Transactional
     public void saveDocument(MultipartFormDataInput input) {
@@ -109,4 +115,63 @@ public class DocumentService {
             throw new RuntimeException("Fehlerhafte ObjectId: " + documentId, e);
         }
     }
+
+    public List<Document> getDocumentsByGroupId(Long groupId) {
+        return documentRepository.find("userId", groupId).list();
+    }
+    @Transactional
+    public void uploadDocumentGroup(MultipartFormDataInput input) {
+        try {
+            Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
+            Document document = new Document();
+
+
+            // Dokumentname abrufen (falls explizit gesendet)
+            if (uploadForm.containsKey("documentName")) {
+                document.documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
+            }
+
+            if (uploadForm.containsKey("groupId")) {
+                String groupId = uploadForm.get("groupId").get(0).getBody(String.class, null);
+                document.userId = Long.parseLong(groupId) + 1000;
+            }
+
+            // Dateiinhalt abrufen und den Namen aus dem Upload extrahieren
+            if (uploadForm.containsKey("file")) {
+                InputPart filePart = uploadForm.get("file").get(0);
+                MultivaluedMap<String, String> headers = filePart.getHeaders();
+
+                // Extrahiere den Dateinamen aus dem Content-Disposition-Header
+                String fileName = extractFileName(headers);
+                if (document.documentName == null || document.documentName.isEmpty()) {
+                    document.documentName = fileName; // Falls kein Name übergeben wurde, verwende den Dateinamen
+                }
+
+                InputStream inputStream = filePart.getBody(InputStream.class, null);
+                document.content = readInputStream(inputStream);
+            }
+
+            documentRepository.persist(document);
+        } catch (Exception e) {
+            throw new RuntimeException("Fehler beim Speichern des Dokuments", e);
+        }
+    }
+
+    @Transactional
+    public void deleteDocumentGroup(Long documentId) {
+
+
+        try {
+            ObjectId objectId = new ObjectId(String.valueOf(documentId));
+            //documentRepository.deleteById(objectId);
+            documentRepository.delete("_id", objectId);
+            System.out.println("Dokument gelöscht: " + documentId);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Ungültige ObjectId: " + documentId);
+            throw new RuntimeException("Fehlerhafte ObjectId: " + documentId, e);
+        }
+
+    }
+
+
 }
