@@ -81,7 +81,9 @@ const GroupDashboard = ({ groupId }) => {
     const fetchGroupUsers = async () => {
         try {
             const response = await GroupService.getUsersByGroupId(groupId);
-            setGroupUsers(response.data || []); // Fallback für leere oder fehlerhafte Antworten
+            console.log('getUsers Dashboard - Users: ', response);
+            setGroupUsers(response.data); // Fallback für leere oder fehlerhafte Antworten
+            console.log('GroupUserSet: ', groupUsers);
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppenmitglieder:', error);
             setGroupUsers([]);
@@ -173,7 +175,7 @@ const GroupDashboard = ({ groupId }) => {
                     <ul>
                         {groupUsers.length > 0 ? (
                             groupUsers.map((user) => (
-                                <li key={user.id}>{user.username} {isOwner &&
+                                <li key={user.id}>{user.username} {
                                     <button onClick={() => handleRemoveUser(user.id)}>Entfernen</button>}
                                 </li>
                             ))

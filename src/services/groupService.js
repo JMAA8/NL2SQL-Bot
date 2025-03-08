@@ -172,6 +172,7 @@ export const getUsersByGroupId = async (groupId) => {
         const response = await axios.get(`${API_BASE_URL}/${groupId}/users`, {
             headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
         });
+        console.log('getUserByGroupId - Users: ', response.data);
         return response.data; // Gibt die Benutzer der Gruppe zurück
     } catch (error) {
         throw error.response?.data || 'Fehler beim Abrufen der Gruppenmitglieder.';

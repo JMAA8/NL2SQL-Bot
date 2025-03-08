@@ -173,13 +173,13 @@ public class GroupService {
     }
 
     public List<User> getUsersByGroupId(Long groupId) {
-        return groupRepository.findByIdOptional(groupId)
-                .map(group -> Optional.ofNullable(group.getMembers())
-                        .orElse(Collections.emptySet())
-                        .stream()
-                        .map(GroupUser::getUser)
-                        .collect(Collectors.toList()))
-                .orElse(Collections.emptyList()); // Falls Gruppe nicht existiert, gib eine leere Liste zurück
+        List<Long> userIds = groupUserRepository.findUserIdsByGroupId(groupId);
+
+        if (userIds.isEmpty()) {
+            return Collections.emptyList(); // Falls keine User gefunden wurden
+        }
+
+        return userRepository.findUsersByIds(userIds); // Lädt die vollständigen User-Objekte
     }
 
     public boolean isUserOwner(Long groupId, Long userId) {
