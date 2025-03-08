@@ -8,9 +8,10 @@ import java.time.LocalDateTime;
 
 @MongoEntity(collection = "Documents")
 public class Document extends PanacheMongoEntity {
-    public Long userId;
+    public Long associationId;
     public String documentName;
     public String content;
+    public String association;
     public LocalDateTime timestamp = LocalDateTime.now();
 
     @PrePersist

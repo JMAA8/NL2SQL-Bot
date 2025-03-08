@@ -28,6 +28,7 @@ public class DocumentService {
     @Inject
     GroupRepository groupRepository;
 
+    //Dokument speichern USER
     @Transactional
     public void saveDocument(MultipartFormDataInput input) {
         try {
@@ -37,7 +38,7 @@ public class DocumentService {
             // Benutzer-ID abrufen und in Long umwandeln
             if (uploadForm.containsKey("userId")) {
                 String userId = uploadForm.get("userId").get(0).getBody(String.class, null);
-                document.userId = Long.parseLong(userId);
+                document.associationId = Long.parseLong(userId);
             }
 
             // Dokumentname abrufen (falls explizit gesendet)
@@ -59,7 +60,7 @@ public class DocumentService {
                 InputStream inputStream = filePart.getBody(InputStream.class, null);
                 document.content = readInputStream(inputStream);
             }
-
+            document.association = "USER";
             documentRepository.persist(document);
         } catch (Exception e) {
             throw new RuntimeException("Fehler beim Speichern des Dokuments", e);
@@ -83,12 +84,12 @@ public class DocumentService {
 
     @Transactional
     public List<Document> getDocumentsByUserId(Long userId) {
-        return documentRepository.find("userId", userId).list();
+        return documentRepository.find("associationId = ?1 and association like ?2", userId, "USER").list();
     }
 
     @Transactional
     public List<Document> searchDocuments(Long userId, String search) {
-        return documentRepository.list("userId = ?1 and lower(documentName) like ?2", userId, "%" + search.toLowerCase() + "%");
+        return documentRepository.list("associationId = ?1 and lower(documentName) like ?2 and association like ?3", userId, "%" + search.toLowerCase() +"%", "USER");
     }
 
     private String readInputStream(InputStream inputStream) throws Exception {
@@ -117,23 +118,26 @@ public class DocumentService {
     }
 
     public List<Document> getDocumentsByGroupId(Long groupId) {
-        return documentRepository.find("userId", groupId).list();
+        return documentRepository.find("associationId = ?1 and association like ?2", groupId, "GROUP").list();
     }
+
+
+    //Datei speichern GROUP
     @Transactional
     public void uploadDocumentGroup(MultipartFormDataInput input) {
         try {
             Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
             Document document = new Document();
 
+            // Benutzer-ID abrufen und in Long umwandeln
+            if (uploadForm.containsKey("groupId")) {
+                String groupId = uploadForm.get("groupId").get(0).getBody(String.class, null);
+                document.associationId = Long.parseLong(groupId);
+            }
 
             // Dokumentname abrufen (falls explizit gesendet)
             if (uploadForm.containsKey("documentName")) {
                 document.documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
-            }
-
-            if (uploadForm.containsKey("groupId")) {
-                String groupId = uploadForm.get("groupId").get(0).getBody(String.class, null);
-                document.userId = Long.parseLong(groupId) + 1000;
             }
 
             // Dateiinhalt abrufen und den Namen aus dem Upload extrahieren
@@ -150,28 +154,13 @@ public class DocumentService {
                 InputStream inputStream = filePart.getBody(InputStream.class, null);
                 document.content = readInputStream(inputStream);
             }
-
+            document.association = "GROUP";
             documentRepository.persist(document);
         } catch (Exception e) {
             throw new RuntimeException("Fehler beim Speichern des Dokuments", e);
         }
     }
 
-    @Transactional
-    public void deleteDocumentGroup(Long documentId) {
-
-
-        try {
-            ObjectId objectId = new ObjectId(String.valueOf(documentId));
-            //documentRepository.deleteById(objectId);
-            documentRepository.delete("_id", objectId);
-            System.out.println("Dokument gelöscht: " + documentId);
-        } catch (IllegalArgumentException e) {
-            System.err.println("Ungültige ObjectId: " + documentId);
-            throw new RuntimeException("Fehlerhafte ObjectId: " + documentId, e);
-        }
-
-    }
 
 
 }

@@ -64,12 +64,12 @@ const GroupDashboard = ({ groupId }) => {
             console.log('Group: ', group);
 
             const groupData = {
-                Groupname: group.name,
+                Groupname: group.groupName,
                 password: group.password,
                 owner: group.owner
             };
 
-            setGroupData(group);
+            setGroupData(groupData);
 
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppendetails:', error);

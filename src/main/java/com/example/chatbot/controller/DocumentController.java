@@ -22,7 +22,7 @@ public class DocumentController {
     @Inject
     DocumentService documentService;
 
-    // Neues Dokument speichern
+    // Neues Dokument speichern USER
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response saveDocument(@MultipartForm MultipartFormDataInput input) {
@@ -36,7 +36,7 @@ public class DocumentController {
         }
     }
 
-    // Dokumente eines Benutzers abrufen
+    // Dokumente eines Benutzers abrufen USER
     @GET
     @Path("/{userId}")
     public Response getDocumentsByUserId(@PathParam("userId") Long userId, @QueryParam("search") String search) {
@@ -68,6 +68,7 @@ public class DocumentController {
         return Response.ok("Dokument gelöscht").build();
     }
 
+    //Dokumente abrufen GROUP
     @GET
     @Path("/{groupId}/documents")
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
@@ -76,15 +77,17 @@ public class DocumentController {
         return Response.ok(documents).build();
     }
 
+    //Dokument hochladen GROUP
     @POST
     @Path("/{groupId}/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
-    public Response uploadDocument(@PathParam("groupId") Long groupId, @MultipartForm MultipartFormDataInput input) {
-        documentService.uploadDocumentGroup(groupId, input);
+    public Response uploadDocument(@MultipartForm MultipartFormDataInput input) {
+        documentService.uploadDocumentGroup(input);
         return Response.ok("Dokument hochgeladen").build();
     }
 
+    /*
     @DELETE
     @Path("/documents/{documentId}")
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
@@ -92,6 +95,8 @@ public class DocumentController {
         documentService.deleteDocumentGroup(documentId);
         return Response.ok("Dokument gelöscht").build();
     }
+
+     */
 
 
 }
