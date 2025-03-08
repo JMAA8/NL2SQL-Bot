@@ -82,7 +82,7 @@ const GroupDashboard = ({ groupId }) => {
         try {
             const response = await GroupService.getUsersByGroupId(groupId);
             console.log('getUsers Dashboard - Users: ', response);
-            setGroupUsers(response.data); // Fallback für leere oder fehlerhafte Antworten
+            setGroupUsers(response); // Fallback für leere oder fehlerhafte Antworten
             console.log('GroupUserSet: ', groupUsers);
         } catch (error) {
             console.error('Fehler beim Abrufen der Gruppenmitglieder:', error);
