@@ -17,7 +17,6 @@ const GroupDashboard = ({ groupId }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isOwner, setIsOwner] = useState(false);
-    console.log('GroupDashboard Id: ', groupId);
 
     useEffect(() => {
         fetchGroupUsers();
