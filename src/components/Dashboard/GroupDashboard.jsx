@@ -152,15 +152,10 @@ const GroupDashboard = ({ groupId }) => {
 
 
 
-
-
-
-
-
-
     return (
-        <div style={{ display: 'flex', gap: '20px' }}>
-            <div style={{ flex: 1 }}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: '20px', width: '95vw'}}>
+            {/* Group Info Box */}
+            <div style={{ flex: '1 1 40%', border: '1px solid #ddd', borderRadius: '8px', padding: '20px' , marginTop: '70px'}}>
                 <h1>{groupData.Groupname}</h1>
                 <section>
                     <h2>Gruppendetails</h2>
@@ -168,24 +163,9 @@ const GroupDashboard = ({ groupId }) => {
                     <p><strong>Password:</strong> {groupData.password}</p>
                 </section>
             </div>
-            <div style={{ flex: 1 }}>
-                <section>
-                    <h2>Gruppenmitglieder</h2>
-                    <ul>
-                        {groupUsers.length > 0 ? (
-                            groupUsers.map((user) => (
-                                <li key={user.id}>{user.username} {
-                                    <button onClick={() => handleRemoveUser(user.id)}>Entfernen</button>}
-                                </li>
-                            ))
-                        ) : (
-                            <li>Keine Mitglieder gefunden</li>
-                        )}
-                    </ul>
-                </section>
-            </div>
 
-            <div style={{ flex: 1 }}>
+            {/* Gruppendokumente Box */}
+            <div style={{ flex: '1 1 40%', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginTop: '70px' }}>
                 <section>
                     <h2>Gruppendokumente</h2>
                     <ul>
@@ -200,6 +180,26 @@ const GroupDashboard = ({ groupId }) => {
                     <button onClick={uploadDocument}>Dokument hochladen</button>
                 </section>
             </div>
+
+            {/* Gruppenmitglieder Box */}
+            <div style={{ flex: '1 1 40%', border: '1px solid #ddd', borderRadius: '8px', padding: '20px' }}>
+                <section>
+                    <h2>Gruppenmitglieder</h2>
+                    <ul>
+                        {groupUsers.length > 0 ? (
+                            groupUsers.map((user) => (
+                                <li key={user.id}>
+                                    {user.username}
+                                    <button onClick={() => handleRemoveUser(user.id)}>Entfernen</button>
+                                </li>
+                            ))
+                        ) : (
+                            <li>Keine Mitglieder gefunden</li>
+                        )}
+                    </ul>
+                </section>
+            </div>
+
         </div>
     );
 };

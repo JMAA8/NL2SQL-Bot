@@ -9,12 +9,19 @@ public class LLMRequest {
     private List<Message> messages;
     private int max_tokens;
 
-    public LLMRequest(String prompt) {
-        this.model = "gpt-3.5-turbo"; // Beispielmodell
+    public LLMRequest(String prompt, String bestFileText) {
+        this.model = "gpt-4"; // Modellwahl
+
         this.messages = new ArrayList<>();
         this.messages.add(new Message("system", "You are a helpful assistant."));
-        this.messages.add(new Message("user", prompt));
-        this.max_tokens = 100; // Maximale Tokens
+
+        // Füge den Nutzer-Prompt und den extrahierten PDF-Text hinzu
+        String userMessage = prompt + "\n\nHere is some relevant information from a document that may help you:\n\n" + bestFileText;
+
+        this.messages.add(new Message("user", userMessage));
+        System.out.println("LLMRequest - erfolgreiches Hinzufügen zu Message: " + messages);
+
+        this.max_tokens = 1000; // Erhöht, falls mehr Kontext notwendig ist
     }
 
     // Getter und Setter

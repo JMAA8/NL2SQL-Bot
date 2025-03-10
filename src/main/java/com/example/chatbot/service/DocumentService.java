@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MultivaluedMap;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
@@ -35,37 +36,39 @@ public class DocumentService {
             Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
             Document document = new Document();
 
-            // Benutzer-ID abrufen und in Long umwandeln
+            // Benutzer-ID abrufen
             if (uploadForm.containsKey("userId")) {
                 String userId = uploadForm.get("userId").get(0).getBody(String.class, null);
                 document.associationId = Long.parseLong(userId);
             }
 
-            // Dokumentname abrufen (falls explizit gesendet)
+            // Dokumentname abrufen
             if (uploadForm.containsKey("documentName")) {
                 document.documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
             }
 
-            // Dateiinhalt abrufen und den Namen aus dem Upload extrahieren
+            // Dateiinhalt abrufen und als Binary speichern
             if (uploadForm.containsKey("file")) {
                 InputPart filePart = uploadForm.get("file").get(0);
                 MultivaluedMap<String, String> headers = filePart.getHeaders();
-
-                // Extrahiere den Dateinamen aus dem Content-Disposition-Header
                 String fileName = extractFileName(headers);
+
                 if (document.documentName == null || document.documentName.isEmpty()) {
-                    document.documentName = fileName; // Falls kein Name übergeben wurde, verwende den Dateinamen
+                    document.documentName = fileName;
                 }
 
                 InputStream inputStream = filePart.getBody(InputStream.class, null);
-                document.content = readInputStream(inputStream);
+                byte[] fileBytes = inputStream.readAllBytes(); // Datei in Byte-Array umwandeln
+                document.content = new Binary(fileBytes);
             }
+
             document.association = "USER";
             documentRepository.persist(document);
         } catch (Exception e) {
             throw new RuntimeException("Fehler beim Speichern des Dokuments", e);
         }
     }
+
 
     // Methode zum Extrahieren des Dateinamens aus den Headers
     private String extractFileName(MultivaluedMap<String, String> headers) {
@@ -129,7 +132,7 @@ public class DocumentService {
             Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
             Document document = new Document();
 
-            // Benutzer-ID abrufen und in Long umwandeln
+            // Gruppen-ID abrufen und in Long umwandeln
             if (uploadForm.containsKey("groupId")) {
                 String groupId = uploadForm.get("groupId").get(0).getBody(String.class, null);
                 document.associationId = Long.parseLong(groupId);
@@ -140,7 +143,7 @@ public class DocumentService {
                 document.documentName = uploadForm.get("documentName").get(0).getBody(String.class, null);
             }
 
-            // Dateiinhalt abrufen und den Namen aus dem Upload extrahieren
+            // Dateiinhalt abrufen und als Binary speichern
             if (uploadForm.containsKey("file")) {
                 InputPart filePart = uploadForm.get("file").get(0);
                 MultivaluedMap<String, String> headers = filePart.getHeaders();
@@ -151,15 +154,22 @@ public class DocumentService {
                     document.documentName = fileName; // Falls kein Name übergeben wurde, verwende den Dateinamen
                 }
 
+                // Datei als Byte-Array speichern
                 InputStream inputStream = filePart.getBody(InputStream.class, null);
-                document.content = readInputStream(inputStream);
+                byte[] fileBytes = inputStream.readAllBytes(); // Datei in Byte-Array umwandeln
+
+                document.content = new Binary(fileBytes);
             }
+
             document.association = "GROUP";
             documentRepository.persist(document);
+            System.out.println("✅ Datei erfolgreich gespeichert!");
+
         } catch (Exception e) {
-            throw new RuntimeException("Fehler beim Speichern des Dokuments", e);
+            throw new RuntimeException("❌ Fehler beim Speichern des Dokuments", e);
         }
     }
+
 
 
 

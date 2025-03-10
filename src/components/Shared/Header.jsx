@@ -9,7 +9,7 @@ function Header() {
     const handleLogout = () => {
         sessionStorage.removeItem('token'); // Token löschen
         sessionStorage.removeItem('role');  // Rolle löschen
-        navigate('/login'); // Weiterleitung zur Login-Seite
+        navigate('/'); // Weiterleitung zur Login-Seite
     };
 
     const handleProfileClick = () => {
@@ -29,14 +29,21 @@ function Header() {
             alert('Ungültige Rolle oder nicht angemeldet.');
         }
     };
+    const handleDashboardClick = () => { // Neue Funktion zur Behandlung des Klicks auf "Chatbot Dashboard"
+        if (token) {
+            navigate('/chat'); // Angemeldete Benutzer zur Chat-Seite leiten
+        } else {
+            navigate('/login'); // Nicht angemeldete Benutzer zur Login-Seite leiten
+        }
+    };
 
     return (
         <header style={styles.header}>
             <div style={styles.container}>
                 <h1 style={styles.logo}>
-                    <Link to="/" style={styles.logoLink}>
+                    <button onClick={handleDashboardClick} style={styles.logoLink}> {/* Anpassung: Link zu Button geändert */}
                         Chatbot Dashboard
-                    </Link>
+                    </button>
                 </h1>
                 <nav style={styles.nav}>
                     {token && ( // Profil-Link nur anzeigen, wenn ein Token vorhanden ist
@@ -82,6 +89,7 @@ const styles = {
     },
     logoLink: {
         color: '#fff',
+        background: '#434343',
         textDecoration: 'none',
     },
     nav: {

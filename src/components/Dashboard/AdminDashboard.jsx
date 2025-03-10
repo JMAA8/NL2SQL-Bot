@@ -128,11 +128,13 @@ function AdminDashboard() {
         setSelectedGroupId(groupId);
     };
 
+    const [hoveredGroup, setHoveredGroup] = useState(null);
+
     return (
         <div style={styles.container}>
             {selectedGroupId ? (
                 <>
-                    <button onClick={() => setSelectedGroupId(null)} style={styles.button}>
+                    <button onClick={() => setSelectedGroupId(null)} style={styles.backbutton}>
                         ⬅ Zurück zur Gruppenübersicht
                     </button>
                     <GroupDashboard groupId={selectedGroupId} />
@@ -171,7 +173,10 @@ function AdminDashboard() {
                         <ul>
                             {groups.map((group) => (
                                 <li key={group.id}>
-                                    <button style={styles.groupButton} onClick={() => openGroupDashboard(group.id)}>
+                                    <button style={styles.groupButton(hoveredGroup === group.id)}
+                                            onClick={() => openGroupDashboard(group.id)}
+                                            onMouseEnter={() => setHoveredGroup(group.id)}
+                                            onMouseLeave={() => setHoveredGroup(null)}>
                                         {group.groupName}
                                     </button>
                                 </li>
@@ -207,7 +212,8 @@ const styles = {
     input: { width: '95%', padding: '8px', marginBottom: '10px' },
     button: { padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
     deleteButton: { marginLeft: '10px', backgroundColor: '#ff4d4d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
-    groupButton: { padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px', width: '100%', textAlign: 'left' }
+    backbutton: { position: 'absolute', top: '100px',width: '200px',height: '50px',backgroundColor: '#007bff',color: 'white',border: 'none',borderRadius: '5px',cursor: 'pointer'},
+    groupButton: (isHovered) => ({ padding: '10px', backgroundColor: isHovered ? '#007bff' : '#ffffff',  color: isHovered ? 'white' : 'black', border: '1px solid #ddd', cursor: 'pointer', borderRadius: '5px', width: '100%', textAlign: 'left' })
 };
 
 export default AdminDashboard;

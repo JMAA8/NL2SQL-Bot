@@ -1,5 +1,6 @@
 package com.example.chatbot.llm;
 
+import com.example.chatbot.Embedding.CheckSimilarity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -9,9 +10,15 @@ public class LLMService {
     @Inject
     LLMClient llmClient; // RESTEasy-Client verwenden
 
+    @Inject
+    CheckSimilarity checkSimilarity;
+
     public String getResponse(String prompt) {
+
+        String bestFileText = checkSimilarity.checkSimilarity(prompt);
+
         // Anfrage erstellen
-        LLMRequest request = new LLMRequest(prompt);
+        LLMRequest request = new LLMRequest(prompt, bestFileText);
 
         try {
             // API über den LLMClient aufrufen
