@@ -8,7 +8,7 @@ import org.bson.types.Binary;
 import java.time.LocalDateTime;
 
 @MongoEntity(collection = "Documents")
-public class Document extends PanacheMongoEntity {
+public class DocumentMongoDB extends PanacheMongoEntity {
     public Long associationId;
     public String documentName;
     public Binary content;

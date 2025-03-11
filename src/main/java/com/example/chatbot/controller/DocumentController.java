@@ -1,7 +1,6 @@
 package com.example.chatbot.controller;
 
-import com.example.chatbot.entity.Group;
-import com.example.chatbot.entityMongoDB.Document;
+import com.example.chatbot.entityMongoDB.DocumentMongoDB;
 import com.example.chatbot.service.DocumentService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -42,21 +41,21 @@ public class DocumentController {
     public Response getDocumentsByUserId(@PathParam("userId") Long userId, @QueryParam("search") String search) {
         System.out.println("DocumentController - Get by Id - userId: " + userId);
 
-        List<Document> documents;
+        List<DocumentMongoDB> documentMongoDBS;
 
         if (search != null && !search.isEmpty()) {
             System.out.println("DocumentController - Get by Id - Search: " + search);
-            documents = documentService.searchDocuments(userId, search);
+            documentMongoDBS = documentService.searchDocuments(userId, search);
         } else {
-            documents = documentService.getDocumentsByUserId(userId);
+            documentMongoDBS = documentService.getDocumentsByUserId(userId);
         }
 
-        if (documents.isEmpty()) {
-            System.out.println("DocumentController - Get - Keine Dokumente vorhanden: " + documents);
+        if (documentMongoDBS.isEmpty()) {
+            System.out.println("DocumentController - Get - Keine Dokumente vorhanden: " + documentMongoDBS);
             return Response.ok(Collections.emptyList()).build(); // Leere Liste zurückgeben
         }
 
-        return Response.ok(documents).build();
+        return Response.ok(documentMongoDBS).build();
     }
 
 
@@ -73,8 +72,8 @@ public class DocumentController {
     @Path("/{groupId}/documents")
     @RolesAllowed({"ADMIN", "ADVANCED_USER"})
     public Response getDocumentsByGroup(@PathParam("groupId") Long groupId) {
-        List<Document> documents = documentService.getDocumentsByGroupId(groupId);
-        return Response.ok(documents).build();
+        List<DocumentMongoDB> documentMongoDBS = documentService.getDocumentsByGroupId(groupId);
+        return Response.ok(documentMongoDBS).build();
     }
 
     //Dokument hochladen GROUP

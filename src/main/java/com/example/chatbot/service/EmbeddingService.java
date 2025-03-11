@@ -6,6 +6,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.bson.Document;
 
+import java.util.List;
+
 
 @ApplicationScoped
 public class EmbeddingService {
@@ -13,12 +15,7 @@ public class EmbeddingService {
     @Inject
     EmbeddingRepository repository;
 
-    public void saveJsonFileToMongo(Document jsonData, Long associationId, String documentName, String association) {
-        // Lade die JSON-Datei als String
-        //String jsonContent = new String(Files.readAllBytes(Paths.get(filePath)));
-
-        // Konvertiere den String zu einem BSON Document für MongoDB
-        //Document jsonData = Document.parse(jsonContent);
+    public void saveJsonFileToMongo(List<Document> jsonData, Long associationId, String documentName, String association) {
 
         // Speichere es in der Datenbank
         Embedding embedding = new Embedding();
