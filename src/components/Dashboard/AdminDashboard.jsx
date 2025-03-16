@@ -18,6 +18,12 @@ function AdminDashboard() {
         role: 'Keine Rolle'
     });
 
+    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const roles = ['ADMIN', 'BASIC_USER', 'ADVANCED_USER'];
+
     const [documents, setDocuments] = useState([]);
     const [documentSearch, setDocumentSearch] = useState('');
     const [newDocument, setNewDocument] = useState(null);
@@ -124,6 +130,23 @@ function AdminDashboard() {
         }
     };
 
+    const openModal = (userId) => {
+        setSelectedUserId(userId);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedUserId(null);
+        setSelectedRole('');
+    };
+
+    const handleRoleChange = async () => {
+        if (selectedUserId && selectedRole) {
+            await userService.changeRole(selectedUserId, selectedRole);
+            closeModal();
+        }
+    };
     const openGroupDashboard = (groupId) => {
         setSelectedGroupId(groupId);
     };
@@ -193,13 +216,42 @@ function AdminDashboard() {
                         <input type="text" placeholder="Search..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} style={styles.input} />
                         <ul>
                             {users.map((user) => (
-                                <li key={user.id}>{user.username}</li>
+                                <li key={user.id}>
+                                    {user.username}
+                                    <button onClick={() => openModal(user.id)} style={styles.button}>
+                                        Rolle ändern
+                                    </button>
+                                </li>
                             ))}
                         </ul>
                         <input type="text" placeholder="Username" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} style={styles.input} />
                         <input type="password" placeholder="Password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} style={styles.input} />
                         <button onClick={handleCreateUser} style={styles.button}>Create</button>
                     </div>
+
+                    {/* Modal-Fenster für die Rollenänderung */}
+                    {isModalOpen && (
+                        <div style={styles.modal}>
+                            <h3>Neue Rolle auswählen</h3>
+                            <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={styles.select}>
+                                <option value="">Rolle wählen...</option>
+                                {roles.map((role) => (
+                                    <option key={role} value={role}>
+                                        {role}
+                                    </option>
+                                ))}
+                            </select>
+                            <div style={styles.buttonContainer}>
+                                <button onClick={handleRoleChange} disabled={!selectedRole} style={styles.saveButton}>
+                                    Speichern
+                                </button>
+                                <button onClick={closeModal} style={styles.cancelButton}>
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                 </>
             )}
         </div>
@@ -213,7 +265,22 @@ const styles = {
     button: { padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
     deleteButton: { marginLeft: '10px', backgroundColor: '#ff4d4d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
     backbutton: { position: 'absolute', top: '100px',width: '200px',height: '50px',backgroundColor: '#007bff',color: 'white',border: 'none',borderRadius: '5px',cursor: 'pointer'},
-    groupButton: (isHovered) => ({ padding: '10px', backgroundColor: isHovered ? '#007bff' : '#ffffff',  color: isHovered ? 'white' : 'black', border: '1px solid #ddd', cursor: 'pointer', borderRadius: '5px', width: '100%', textAlign: 'left' })
+    groupButton: (isHovered) => ({ padding: '10px', backgroundColor: isHovered ? '#007bff' : '#ffffff',  color: isHovered ? 'white' : 'black', border: '1px solid #ddd', cursor: 'pointer', borderRadius: '5px', width: '100%', textAlign: 'left' }),
+    modal: {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: '#fff',
+        padding: '20px',
+        borderRadius: '8px',
+        boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
+        zIndex: 1000
+    },
+    select: { width: '100%', padding: '8px', marginBottom: '10px' },
+    buttonContainer: { marginTop: '10px', display: 'flex', justifyContent: 'space-between' },
+    saveButton: { backgroundColor: '#4CAF50', color: 'white', padding: '5px 10px', border: 'none', cursor: 'pointer' },
+    cancelButton: { backgroundColor: '#f44336', color: 'white', padding: '5px 10px', border: 'none', cursor: 'pointer' },
 };
 
 export default AdminDashboard;

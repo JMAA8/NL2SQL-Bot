@@ -104,7 +104,17 @@ function AdvancedUserDashboard() {
     const fetchUserDocuments = async () => {
         try {
             const docs = await documentService.getUserDocuments();
-            setDocuments(docs);
+            console.log("Docs: ", docs);
+
+            if (!docs || docs.length === 0) {
+                console.log("Keine Dokumente vorhanden");
+                setDocuments([{ id: "no-documents", name: "Noch keine Documents hochgeladen" }]);
+            } else {
+                setDocuments(docs.map(doc => ({
+                    id: doc.id || "unknown",
+                    name: doc.documentName?.toString() || "Unbenanntes Dokument"
+                })));
+            }
         } catch (error) {
             console.error('Fehler beim Abrufen der Dokumente:', error);
         }
@@ -124,6 +134,16 @@ function AdvancedUserDashboard() {
             fetchUserDocuments();
         } catch (error) {
             console.error('Fehler beim Hochladen des Dokuments:', error);
+        }
+    };
+
+    // 🔹 Dokument löschen
+    const handleDeleteDocument = async (documentId) => {
+        try {
+            await documentService.deleteDocument(documentId);
+            fetchUserDocuments();
+        } catch (error) {
+            console.error('Fehler beim Löschen des Dokuments:', error);
         }
     };
 
@@ -157,7 +177,8 @@ function AdvancedUserDashboard() {
 
                 <ul>
                     {filteredDocuments.map((doc) => (
-                        <li key={doc.id}>{doc.name}</li>
+                        <li key={doc.id}>{doc.name}
+                        <button onClick={() => handleDeleteDocument(doc.id)} style={styles.deleteButton}>🗑️</button></li>
                     ))}
                 </ul>
             </div>
@@ -173,7 +194,7 @@ function AdvancedUserDashboard() {
                     style={styles.input}
                 />
                 <button onClick={handleGroupSearch} style={styles.button}>🔍</button>
-                <button onClick={() => setShowCreateGroupPopup(true)} style={styles.createButton}>+ Neue Gruppe</button>
+                <button onClick={() => setShowCreateGroupPopup(true)} style={styles.button}>+ Neue Gruppe</button>
 
                 <ul>
                     {groups.map((group) => (
@@ -205,7 +226,7 @@ function AdvancedUserDashboard() {
                         />
                         <div style={styles.popupButtons}>
                             <button onClick={handleCreateGroup} style={styles.button}>Erstellen</button>
-                            <button onClick={() => setShowCreateGroupPopup(false)} style={styles.cancelButton}>Abbrechen</button>
+                            <button onClick={() => setShowCreateGroupPopup(false)} style={styles.button}>Abbrechen</button>
                         </div>
                     </div>
                 </div>
@@ -215,7 +236,14 @@ function AdvancedUserDashboard() {
 }
 
 const styles = {
-    // Gleiche Styles wie in BasicUserDashboard
+    container: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', padding: '20px' },
+    section: { border: '1px solid #ccc', padding: '15px', borderRadius: '8px' },
+    input: { width: '95%', padding: '8px', marginBottom: '10px' },
+    uploadInput: { marginRight: '10px' },
+    button: { padding: '10px',marginRight: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px'},
+    joinGroupContainer: { marginTop: '10px' },
+    message: { color: 'blue', fontWeight: 'bold', marginTop: '10px' },
+    deleteButton: { marginLeft: '10px', backgroundColor: '#ff4d4d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' }
 };
 
 export default AdvancedUserDashboard;

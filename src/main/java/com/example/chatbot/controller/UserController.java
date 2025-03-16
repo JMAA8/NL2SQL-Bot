@@ -41,6 +41,19 @@ public class UserController {
         }
     }
 
+    @PUT
+    @Path("/{userId}/change-role")
+    public Response changeUserRole(@PathParam("userId") Long userId, @QueryParam("roleName") String roleName) {
+        try {
+            userService.assignRoleToUser(userId, roleName);
+            return Response.ok("{\"message\": \"Rolle erfolgreich geändert\"}").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\"error\": \"" + e.getMessage() + "\"}").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("{\"error\": \"Interner Fehler\"}").build();
+        }
+    }
+
 
 
 }

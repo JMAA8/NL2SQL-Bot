@@ -24,4 +24,6 @@ public class RoleRepository implements PanacheRepository<Role> {
     public List<Role> getAllRoles() {
         return listAll();
     }
+
+
 }

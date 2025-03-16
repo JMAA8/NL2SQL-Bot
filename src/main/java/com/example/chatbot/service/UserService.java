@@ -2,9 +2,11 @@ package com.example.chatbot.service;
 
 import com.example.chatbot.entity.Role;
 import com.example.chatbot.entity.User;
+import com.example.chatbot.entity.UserRoles;
 import com.example.chatbot.repository.RoleRepository;
 import com.example.chatbot.repository.UserRepository;
 
+import com.example.chatbot.repository.UserRolesRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -23,6 +25,9 @@ public class UserService {
 
     @Inject
     RoleRepository roleRepository;
+
+    @Inject
+    UserRolesRepository userRolesRepository;
 
     // Benutzer registrieren
     public User registerUser(String username, String password) {
@@ -51,17 +56,31 @@ public class UserService {
         userRepository.persist(existingUser);
     }
 
-    // Rolle zu einem Benutzer hinzufügen
+    @Transactional
     public void assignRoleToUser(Long userId, String roleName) {
+        System.out.println("assignRoleToUser");
+
         User user = userRepository.findById(userId);
         Role role = roleRepository.findByName(roleName);
 
-        if (user != null && role != null) {
-            user.getRoles().add(role);
-            userRepository.persist(user);
-        } else {
-            throw new IllegalArgumentException("Benutzer oder Rolle existiert nicht.");
+        if (user == null) {
+            throw new IllegalArgumentException("Benutzer existiert nicht.");
         }
+        if (role == null) {
+            throw new IllegalArgumentException("Rolle existiert nicht.");
+        }
+
+        // Prüfen, ob der Benutzer bereits diese Rolle hat
+        boolean roleExists = userRolesRepository.find("user.id = ?1 and role.id = ?2", userId, role.getId()).count() > 0;
+        if (roleExists) {
+            throw new IllegalArgumentException("Benutzer hat diese Rolle bereits.");
+        }
+
+        // Neue Zuordnung in `user_roles` speichern
+        UserRoles userRole = new UserRoles(user, role);
+        userRolesRepository.persist(userRole);
+        user.setRoles(Set.of(role));
+        System.out.println("Rolle erfolgreich zugewiesen.");
     }
 
     // Rolle von einem Benutzer entfernen

@@ -18,5 +18,10 @@ public class UserRepository implements PanacheRepository<User> {
         return list("id IN ?1", userIds);
     }
 
+    //Findet einen Benutzer
+    public User findById(Long userId) {
+        return find("id", userId).firstResult();
+    }
+
 }
 

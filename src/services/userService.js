@@ -78,7 +78,22 @@ export const addRoleToUser = async (userId, roleName) => {
         throw error.response?.data || 'Fehler beim Hinzufügen der Rolle.';
     }
 };
-
+// Rolle ändern
+export const changeRole = async (userId, roleName) => {
+    try {
+        const response = await axios.put(
+            `${API_BASE_URL}/${userId}/change-role`,
+            {},
+            {
+                params: { roleName },
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
+            }
+        );
+        return response.data; // Erfolgsnachricht
+    } catch (error) {
+        throw error.response?.data || 'Fehler beim Hinzufügen der Rolle.';
+    }
+};
 // Rolle von einem Benutzer entfernen
 export const removeRoleFromUser = async (userId, roleName) => {
     try {
@@ -99,4 +114,5 @@ export default {
     deleteUser,
     addRoleToUser,
     removeRoleFromUser,
+    changeRole,
 };

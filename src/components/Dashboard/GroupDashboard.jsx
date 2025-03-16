@@ -177,7 +177,7 @@ const GroupDashboard = ({ groupId }) => {
                         ))}
                     </ul>
                     <input type="file" onChange={(e) => setNewDocument(e.target.files[0])} />
-                    <button onClick={uploadDocument}>Dokument hochladen</button>
+                    <button onClick={uploadDocument}style={styles.button}>Dokument hochladen</button>
                 </section>
             </div>
 
@@ -203,5 +203,7 @@ const GroupDashboard = ({ groupId }) => {
         </div>
     );
 };
-
+const styles = {
+    button: { padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' },
+};
 export default GroupDashboard;
