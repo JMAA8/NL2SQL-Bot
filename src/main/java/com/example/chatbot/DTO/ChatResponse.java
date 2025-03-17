@@ -1,4 +1,4 @@
-package com.example.chatbot.chat;
+package com.example.chatbot.DTO;
 
 public class ChatResponse {
     private String response;

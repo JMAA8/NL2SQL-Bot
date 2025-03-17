@@ -1,5 +1,6 @@
-package com.example.chatbot.chat;
+package com.example.chatbot.controller;
 
+import com.example.chatbot.DTO.ChatRequest;
 import com.example.chatbot.entityMongoDB.Chat;
 import com.example.chatbot.entityMongoDB.ChatMessage;
 import com.example.chatbot.llm.LLMService;
