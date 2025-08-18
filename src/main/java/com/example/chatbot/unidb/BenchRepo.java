@@ -3,6 +3,7 @@ package com.example.chatbot.unidb;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class BenchRepo {
             ps.setInt(3, testNo);
             ps.setString(4, nlText);
             if (llmSqlOrNull == null) ps.setNull(5, Types.VARCHAR); else ps.setString(5, llmSqlOrNull);
-            ps.setDouble(6, latencyMs);
+            ps.setBigDecimal(6, BigDecimal.valueOf(latencyMs));
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 Map<String,Object> out = new HashMap<>();

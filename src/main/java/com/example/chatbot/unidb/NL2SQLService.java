@@ -14,7 +14,14 @@ public class NL2SQLService {
             "Du bist ein NL2SQL-Generator für PostgreSQL. Regeln: " +
                     "NUR EINE SQL-Zeile, kein Semikolon/Kommentar. IMMER READ-ONLY (SELECT). " +
                     "Nur folgende Tabellen/Spalten: ..." +
-                    "Wenn personenbezogene/sensible Daten (E-Mail, Passworthashes, Geburtsdaten, individuelle Note) => BLOCK.";
+                    "Nutze nur das Schema der Uni-DB:\n" +
+                    "studenten(student_id, matrikelnummer, vorname, nachname, geburtsdatum, email, studiengang, einschreibedatum, status),\n" +
+                    "professoren(professor_id, vorname, nachname, email, fachbereich, raum),\n" +
+                    "kurse(kurs_id, kursname, beschreibung, ects, semester, professor_id),\n" +
+                    "kursbelegung(student_id, kurs_id, belegungsdatum),\n" +
+                    "pruefungen(pruefung_id, kurs_id, pruefungsdatum, pruefungsart, raum),\n" +
+                    "anmeldung_pruefung(student_id, pruefung_id, anmeldedatum, note),\n" +
+                    "rollen(rolle_id, rollenname), benutzer(nutzername, passwort_hash, email, rolle_id, student_id, professor_id).";
 
     public String generateSql(String userQuestion) {
         var req = new LLMRequest(userQuestion, ""); // kein Dokutext anhängen!

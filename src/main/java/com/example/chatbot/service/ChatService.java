@@ -13,6 +13,8 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import com.example.chatbot.llm.LLMService;
 import java.time.Instant;
+import java.util.regex.Pattern;
+
 
 
 
@@ -60,7 +62,7 @@ public class ChatService {
         try {
             if ("db".equals(route)) {
                 // 1) Benchmark-Run sicherstellen
-                runState.ensureRun(bench, "WebApp Baseline", "v0"); // -> bench.evaluation_run
+                runState.ensureRun(bench, "WebApp Baseline", "v4"); // -> bench.evaluation_run
 
                 int testNo = runState.nextTestNo();
                 String gen = nl2sql.generateSql(prompt); // SQL oder "BLOCK"
@@ -95,12 +97,37 @@ public class ChatService {
         return chat;
     }
 
+    private static final Pattern DB_HINTS = Pattern.compile(
+            // Enthält .* an Anfang/Ende, damit matches() auf ganze Zeile passt
+            ".*\\b(" +
+                    // Kurse / Kursnamen / ECTS / Semester
+                    "kurs|kurse|kursen|kursname|kursnamen|datenbanken|ects|semester|ss\\d{4}|ws\\d{4}|" +
+                    // Prüfungen (mit Umlaut- und 'ue'-Variante) + Prüfungsdatum
+                    "pr(ü|u)fung|pr(ü|u)fungen|pruefung|pruefungen|pr(ü|u)fungsdatum|pruefungsdatum|" +
+                    // Studierende / Studenten
+                    "student|studenten|studierende|studierenden|" +
+                    // Professoren / Dozenten
+                    "professor|professoren|dozent|dozenten|" +
+                    // Belegungen
+                    "belegung|belegungen|belegt|kursbelegung|" +
+                    // Noten (inkl. Durchschnitt/„keine Note“/offen)
+                    "note|noten|durchschnittsnote|schnittnote|offen|keine\\s+note|" +
+                    // An-/Abmeldungen zu Prüfungen
+                    "anmeldung|anmeldungen|angemeldet|" +
+                    // Admin-/RBAC-Tabellen
+                    "benutzer|nutzer|rolle|rollen|" +
+                    // Räume
+                    "raum|räume|raeume|" +
+                    // Zähl- und Ranking-Trigger
+                    "anzahl|top-?\\s*\\d+|meisten" +
+                    ")\\b.*",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+
     // --- sehr einfache Heuristik: Uni-Schlüsselwörter => DB ---
     private String simpleRoute(String p) {
-        String s = p.toLowerCase();
-        if (s.matches(".*\\b(kurs|kurse|ects|pr(ü|u)fung|student|professor|note|einschreib|belegung|rolle|benutzer|raum|semester)\\b.*"))
-            return "db";
-        return "docs";
+        String s = (p == null) ? "" : p;
+        return DB_HINTS.matcher(s).matches() ? "db" : "docs";
     }
 
 
