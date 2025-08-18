@@ -3,6 +3,7 @@ package com.example.chatbot.entityMongoDB;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @MongoEntity(collection = "ChatMessage")
@@ -11,7 +12,7 @@ public class ChatMessage extends PanacheMongoEntity {
     private Long userId;
     private String prompt;
     private String response;
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     public ChatMessage() {
         // Default-Konstruktor
@@ -22,7 +23,7 @@ public class ChatMessage extends PanacheMongoEntity {
         this.userId = userId;
         this.prompt = prompt;
         this.response = response;
-        this.timestamp = LocalDateTime.now(); // Zeitstempel setzen
+        this.timestamp = Instant.now(); // Zeitstempel setzen
     }
 
     // Getter und Setter
@@ -58,11 +59,6 @@ public class ChatMessage extends PanacheMongoEntity {
         this.response = response;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
-    }
+    public Instant getTimestamp() { return timestamp; }
+    public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
 }

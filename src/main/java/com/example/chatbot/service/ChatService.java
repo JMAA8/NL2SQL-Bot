@@ -4,10 +4,15 @@ import com.example.chatbot.entityMongoDB.Chat;
 import com.example.chatbot.entityMongoDB.ChatMessage;
 import com.example.chatbot.repository.ChatMessageRepository;
 import com.example.chatbot.repository.ChatRepository;
+import com.example.chatbot.unidb.NL2SQLService;
+import com.example.chatbot.unidb.BenchRepo;
+import com.example.chatbot.unidb.UnidbReadRepo;
+import com.example.chatbot.unidb.RunState;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import com.example.chatbot.llm.LLMService;
+import java.time.Instant;
 
 
 
@@ -24,50 +29,78 @@ public class ChatService {
 
     @Inject
     LLMService llmService;
+
+    @Inject
+    NL2SQLService nl2sql;
+
+    @Inject
+    BenchRepo bench;
+
+    @Inject
+    UnidbReadRepo unidb;
+
+    @Inject
+    RunState runState;
+
     // Nachricht speichern und Chat verwalten
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
         Chat chat = (chatId != null) ? chatRepository.findByChatId(chatId) : null;
-        System.out.println("chatService chatId: " + chatId);
-        System.out.println("chatService Prompt: " + prompt);
-
-        try {
-            // Falls `chatId` null ist, wird ein neuer Chat erstellt
-            if (chat == null) {
-                System.out.println("chatService - if - Neuer Chat wird erstellt");
-                chat = new Chat();
-                chat.setUserId(userId);
-                chat.setTitle(prompt.split(" ")[0]); // Erstes Wort des Prompts als Titel
-                chatRepository.persistChat(chat); // Chat speichern
-                System.out.println("Neuer Chat erstellt mit ID: " + chat.getChatId());
-            }
-
-            // Verbindung zum LLM herstellen und Antwort abrufen
-            System.out.println("ChatService - Verbindung zum LLM herstellen");
-            String llmResponse = llmService.getResponse(prompt);
-            System.out.println("Antwort vom LLM erhalten: " + llmResponse);
-
-            // Nachricht erstellen
-            ChatMessage message = new ChatMessage(chat.getChatId(), userId, prompt, llmResponse);
-            System.out.println("ChatService - handleChatMessage - Nachricht wird erstellt");
-
-            // Nachricht speichern
-            chatMessageRepository.persistMessage(message);
-            System.out.println("Nachricht gespeichert mit ChatId: " + message.getChatId());
-
-            // Nachrichten abrufen und direkt setzen
-            List<ChatMessage> messages = chatMessageRepository.findMessagesByChatId(chat.getChatId());
-            chat.setMessages(messages);
-
-            // Chat aktualisieren
-            chatRepository.update(chat);
-            System.out.println("Chat aktualisiert mit neuen Nachrichten: " + chat.getMessages());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Fehler beim Verarbeiten der Nachricht", e);
+        if (chat == null) {
+            chat = new Chat();
+            chat.setUserId(userId);
+            chat.setTitle(prompt.split("\\s+")[0]);
+            chat.setCreatedAt(Instant.now());
+            chatRepository.persistChat(chat);
         }
 
+        String route = simpleRoute(prompt); // "db" | "docs"
+        String finalAnswer;
+
+        try {
+            if ("db".equals(route)) {
+                // 1) Benchmark-Run sicherstellen
+                runState.ensureRun(bench, "WebApp Baseline", "v0"); // -> bench.evaluation_run
+
+                int testNo = runState.nextTestNo();
+                String gen = nl2sql.generateSql(prompt); // SQL oder "BLOCK"
+                Integer qno = bench.findQuestionNoByExactText(prompt); // 1..25 (kann null sein)
+
+                // 2) Ergebnis im Benchmark loggen (NO-ACTOR-Variante)
+                bench.evalNoActor(runState.getRunId(),
+                        qno != null ? qno : 0,
+                        testNo,
+                        prompt,
+                        gen,
+                        0 /* e2e-latency-ms, kannst du später messen */);
+
+                // 3) Vorschau aus DB oder BLOCK-Hinweis
+                if (!"BLOCK".equalsIgnoreCase(gen)) {
+                    finalAnswer = unidb.previewSelect(gen, 25); // hübsche Vorschau bis 25 Zeilen
+                } else {
+                    finalAnswer = "Diese Abfrage wurde aus Sicherheitsgründen blockiert.";
+                }
+            } else {
+                // Dein bestehender Pfad (Dokumente/Plain LLM)
+                finalAnswer = llmService.getResponse(prompt);
+            }
+        } catch (Exception e) {
+            finalAnswer = "Fehler: " + e.getMessage();
+        }
+
+        ChatMessage msg = new ChatMessage(chat.getChatId(), userId, prompt, finalAnswer);
+        chatMessageRepository.persistMessage(msg);
+        chat.setMessages(chatMessageRepository.findMessagesByChatId(chat.getChatId()));
+        chatRepository.update(chat);
         return chat;
+    }
+
+    // --- sehr einfache Heuristik: Uni-Schlüsselwörter => DB ---
+    private String simpleRoute(String p) {
+        String s = p.toLowerCase();
+        if (s.matches(".*\\b(kurs|kurse|ects|pr(ü|u)fung|student|professor|note|einschreib|belegung|rolle|benutzer|raum|semester)\\b.*"))
+            return "db";
+        return "docs";
     }
 
 

@@ -1,11 +1,12 @@
 package com.example.chatbot.entityMongoDB;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import jakarta.persistence.PrePersist;
+
 
 import java.time.LocalDateTime;
 
@@ -15,16 +16,10 @@ public class Chat extends PanacheMongoEntity {
     private Long userId;
     private String title;
     private List<ChatMessage> messages = new ArrayList<>();
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
 
 
-    @PrePersist
-    public void prePersist() {
-        if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
-        }
-    }
 
     // Getter und Setter
     public String getChatId() {
@@ -55,11 +50,6 @@ public class Chat extends PanacheMongoEntity {
         this.messages = messages;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

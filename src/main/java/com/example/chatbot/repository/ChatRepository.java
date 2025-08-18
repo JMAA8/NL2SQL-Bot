@@ -3,6 +3,7 @@ package com.example.chatbot.repository;
 import com.example.chatbot.entityMongoDB.Chat;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.bson.types.ObjectId;
 
 import java.util.List;
 
@@ -16,7 +17,13 @@ public class ChatRepository implements PanacheMongoRepository<Chat> {
 
     // Einen bestimmten Chat basierend auf der Chat-ID abrufen
     public Chat findByChatId(String chatId) {
-        return find("chatId", chatId).firstResult();
+        try {
+            return find("_id", new ObjectId(chatId)).firstResult();
+            // alternativ: return findByIdOptional(new ObjectId(chatId)).orElse(null);
+        } catch (IllegalArgumentException badId) {
+            // ungültige 24-hex ID -> kein Treffer
+            return null;
+        }
     }
 
     // Einen neuen Chat speichern
