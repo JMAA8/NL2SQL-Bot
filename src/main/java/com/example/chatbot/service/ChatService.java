@@ -8,6 +8,7 @@ import com.example.chatbot.unidb.NL2SQLService;
 import com.example.chatbot.unidb.BenchRepo;
 import com.example.chatbot.unidb.UnidbReadRepo;
 import com.example.chatbot.unidb.RunState;
+import com.example.chatbot.unidb.SemanticAnalyzer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -44,6 +45,9 @@ public class ChatService {
     @Inject
     RunState runState;
 
+    @Inject
+    SemanticAnalyzer semanticAnalyzer;
+
     // Nachricht speichern und Chat verwalten
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
@@ -62,7 +66,7 @@ public class ChatService {
         try {
             if ("db".equals(route)) {
                 // 1) Benchmark-Run sicherstellen
-                runState.ensureRun(bench, "WebApp Baseline", "v4"); // -> bench.evaluation_run
+                runState.ensureRun(bench, "WebApp Baseline", "v5"); // -> bench.evaluation_run
 
                 int testNo = runState.nextTestNo();
                 String gen = nl2sql.generateSql(prompt); // SQL oder "BLOCK"
@@ -115,7 +119,7 @@ public class ChatService {
                     // An-/Abmeldungen zu Prüfungen
                     "anmeldung|anmeldungen|angemeldet|" +
                     // Admin-/RBAC-Tabellen
-                    "benutzer|nutzer|rolle|rollen|" +
+                    "benutzer|nutzer|rolle|rollen|Rechte|Schema|" +
                     // Räume
                     "raum|räume|raeume|" +
                     // Zähl- und Ranking-Trigger

@@ -61,4 +61,47 @@ public class UnidbReadRepo {
         if (rows.size()==1) return "_(keine Zeilen)_";
         return sb.toString();
     }
-}
+    public void appendSemanticErrors(long runId, int testNo, List<String> errs) throws SQLException {
+        if (errs == null || errs.isEmpty()) return;
+        String sql = """
+      UPDATE bench.evaluation_result
+         SET semantic_error_types = COALESCE(semantic_error_types, '[]'::jsonb) || to_jsonb(?::text[])
+       WHERE run_id = ? AND test_no = ?
+    """;
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setArray(1, c.createArrayOf("text", errs.toArray(new String[0])));
+            ps.setLong(2, runId);
+            ps.setInt(3, testNo);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Optional: kleine Clause-Signale (keine echte "Accuracy", nur Indikatoren). */
+    public void appendClauseSignals(long runId, int testNo, String generatedSql) throws SQLException {
+        if (generatedSql == null) return;
+        String s = generatedSql.toLowerCase();
+
+        boolean hasGroupBy = s.contains("group by");
+        boolean hasOrderBy = s.contains("order by");
+        boolean hasLimit   = s.contains("limit");
+        boolean hasBetween = s.contains(" between ");
+
+        String json = String.format(
+                "{\"has_group_by\": %s, \"has_order_by\": %s, \"has_limit\": %s, \"has_between\": %s}",
+                hasGroupBy, hasOrderBy, hasLimit, hasBetween
+        );
+
+        String sql = """
+      UPDATE bench.evaluation_result
+         SET component_accuracy = COALESCE(component_accuracy, '{}'::jsonb) || ?::jsonb
+       WHERE run_id = ? AND test_no = ?
+    """;
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, json);
+            ps.setLong(2, runId);
+            ps.setInt(3, testNo);
+            ps.executeUpdate();
+        }
+}}
