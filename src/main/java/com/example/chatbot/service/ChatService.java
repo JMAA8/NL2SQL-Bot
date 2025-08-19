@@ -51,6 +51,8 @@ public class ChatService {
     // Nachricht speichern und Chat verwalten
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
+        long t0 = System.nanoTime(); // E2E-Startzeit messen
+
         Chat chat = (chatId != null) ? chatRepository.findByChatId(chatId) : null;
         if (chat == null) {
             chat = new Chat();
@@ -66,34 +68,98 @@ public class ChatService {
         try {
             if ("db".equals(route)) {
                 // 1) Benchmark-Run sicherstellen
-                runState.ensureRun(bench, "WebApp Baseline", "v5"); // -> bench.evaluation_run
-
+                runState.ensureRun(bench, "WebApp Baseline", "v9");
                 int testNo = runState.nextTestNo();
-                String gen = nl2sql.generateSql(prompt); // SQL oder "BLOCK"
-                Integer qno = bench.findQuestionNoByExactText(prompt); // 1..25 (kann null sein)
 
-                // 2) Ergebnis im Benchmark loggen (NO-ACTOR-Variante)
-                bench.evalNoActor(runState.getRunId(),
-                        qno != null ? qno : 0,
+                // 2) NL->SQL generieren (oder "BLOCK")
+                String gen = nl2sql.generateSql(prompt);
+                Integer qno = bench.findQuestionNoByExactText(prompt); // kann null sein
+                double e2eMs = (System.nanoTime() - t0) / 1_000_000.0;
+
+                // 3) Vorab-Log (legt den evaluation_result-Eintrag an)
+                bench.evalNoActor(
+                        runState.getRunId(),
+                        (qno != null ? qno : 0),
                         testNo,
                         prompt,
                         gen,
-                        0 /* e2e-latency-ms, kannst du später messen */);
+                        e2eMs
+                );
 
-                // 3) Vorschau aus DB oder BLOCK-Hinweis
-                if (!"BLOCK".equalsIgnoreCase(gen)) {
-                    finalAnswer = unidb.previewSelect(gen, 25); // hübsche Vorschau bis 25 Zeilen
+                // 4) ReadOnly + RBAC (leicht) bestimmen
+                boolean isReadOnly = unidb.isSelectOnly(gen);
+                java.util.List<String> semErrs = semanticAnalyzer.detect(gen, prompt);
+                boolean rbacOk = semErrs.stream().noneMatch("PII_REQUEST"::equals);
+                String rbacViolationsJson = rbacOk ? "[]" : "[\"PII_REQUEST\"]";
+
+                // 5) Zwei Pfade: BLOCK/nicht-SELECT => NICHT ausführen; SELECT => ausführen & messen
+                String normSql = bench.normalizeSql(gen);
+                Boolean exactMatch = null, execAcc = null;
+                String compAccJson;
+
+                if ("BLOCK".equalsIgnoreCase(gen) || !isReadOnly) {
+                    // Keine Ausführung – nur Clause-Flags schreiben, damit component_accuracy gefüllt ist
+                    compAccJson = bench.buildClauseFlagsJson(gen); // erzeugt {"has_group_by":..., "has_order_by":..., ...}
+
+                    bench.updateAfterExec(
+                            runState.getRunId(), testNo,
+                            normSql,
+                            isReadOnly,
+                            rbacOk, rbacViolationsJson,
+                            /*exec_ok*/ null, /*exec_error*/ null,
+                            /*exec_ms*/ null, /*row_count*/ null, /*result_hash*/ null,
+                            /*exact_match*/ exactMatch, /*exec_accuracy*/ execAcc,
+                            compAccJson
+                    );
+
+                    finalAnswer = "BLOCK".equalsIgnoreCase(gen)
+                            ? "Diese Abfrage wurde aus Sicherheitsgründen blockiert."
+                            : "BLOCK (kein SELECT).";
+
                 } else {
-                    finalAnswer = "Diese Abfrage wurde aus Sicherheitsgründen blockiert.";
+                    // 5b) Ausführen & Hashen (Ergebnisvorschau + Messwerte)
+                    UnidbReadRepo.QueryRun run = unidb.runAndHashSelect(gen, 25); // führt aus, misst exec_ms, row_count, result_hash
+
+                    // 6) Referenz-SQL laden (falls Benchmark-Frage vorhanden)
+                    String refSql = (qno != null) ? bench.fetchRefSqlByQuestionNo(qno) : null;
+
+                    // 7) Exact-Match (SQL-Text) & Execution-Accuracy (Ergebnis-Hash)
+                    compAccJson = bench.buildClauseFlagsJson(gen); // Basis-Flags immer
+                    if (run.execOk && refSql != null && unidb.isSelectOnly(refSql)) {
+                        exactMatch = bench.sqlEqualsNormalized(gen, refSql);
+                        var ref = unidb.hashOnly(refSql);
+                        execAcc = (ref.execOk && ref.resultHash != null && ref.resultHash.equals(run.resultHash));
+                        // Tabellen-Set-Jaccard ergänzen
+                        compAccJson = bench.mergeCompAccWithJaccard(compAccJson, gen, refSql);
+                    }
+
+                    // 8) Alles in evaluation_result updaten
+                    bench.updateAfterExec(
+                            runState.getRunId(), testNo,
+                            normSql,
+                            /*is_read_only*/ true,
+                            rbacOk, rbacViolationsJson,
+                            run.execOk, run.execError, run.execMs, run.rowCount, run.resultHash,
+                            exactMatch, execAcc,
+                            compAccJson
+                    );
+
+                    // 9) Semantische Fehler zusätzlich anhängen (optional)
+                    if (!semErrs.isEmpty()) bench.appendSemanticErrors(runState.getRunId(), testNo, semErrs);
+
+                    // 10) Antwort für den Chat
+                    finalAnswer = run.preview; // Markdown-Tabelle oder _(keine Zeilen)_
                 }
+
             } else {
-                // Dein bestehender Pfad (Dokumente/Plain LLM)
+                // Dein bestehender Dokumente/Plain-LLM Pfad
                 finalAnswer = llmService.getResponse(prompt);
             }
         } catch (Exception e) {
             finalAnswer = "Fehler: " + e.getMessage();
         }
 
+        // 8) Chat-Nachricht speichern & Chat auffrischen
         ChatMessage msg = new ChatMessage(chat.getChatId(), userId, prompt, finalAnswer);
         chatMessageRepository.persistMessage(msg);
         chat.setMessages(chatMessageRepository.findMessagesByChatId(chat.getChatId()));
@@ -113,7 +179,7 @@ public class ChatService {
                     // Professoren / Dozenten
                     "professor|professoren|dozent|dozenten|" +
                     // Belegungen
-                    "belegung|belegungen|belegt|kursbelegung|" +
+                    "belegung|belegungen|belegt|kursbelegung|kursbelegungen|" +
                     // Noten (inkl. Durchschnitt/„keine Note“/offen)
                     "note|noten|durchschnittsnote|schnittnote|offen|keine\\s+note|" +
                     // An-/Abmeldungen zu Prüfungen
