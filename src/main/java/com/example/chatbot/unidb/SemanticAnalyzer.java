@@ -16,9 +16,10 @@ public class SemanticAnalyzer {
         if (generatedSql == null) return out;
 
         String s = generatedSql.toLowerCase();
+        String nl = (nlInput == null) ? "" : nlInput.toLowerCase();
 
         // 1) Policy / PII
-        if (s.contains("email") || s.matches(".*\\b(passwort|password|hash)\\b.*")) {
+        if (s.contains("email") || s.matches("(?s).*\\b(passwort|password|hash)\\b.*")) {
             out.add("PII_REQUEST");
         }
 
@@ -27,18 +28,22 @@ public class SemanticAnalyzer {
             out.add("NON_READONLY");
         }
 
-        // 3) simple Semantikregeln (anpassbar)
-        if (nlInput != null && nlInput.toLowerCase().contains("durchschnitt")
-                && !s.contains("avg(")) {
+        // 3) Semantikregeln
+        if (nl.contains("durchschnitt") && !s.contains("avg(")) {
             out.add("WRONG_AGGREGATION");
         }
-        if (nlInput != null && nlInput.toLowerCase().contains("zwischen")
-                && !s.contains(" between ")) {
+        if (nl.contains("zwischen") && !s.contains(" between ")) {
             out.add("WRONG_DATE_RANGE");
         }
-        if (nlInput != null && nlInput.toLowerCase().contains("top-")
-                && !(s.contains("order by") && s.contains("limit"))) {
+        if (nl.contains("top-") && !(s.contains("order by") && s.contains("limit"))) {
             out.add("MISSING_ORDER_OR_LIMIT");
+        }
+        if (nl.matches("(?s).*\\b(wie viele|anzahl|count)\\b.*") && !s.contains("count(")) {
+            out.add("MISSING_COUNT");
+        }
+        if (nl.matches("(?s).*\\b(distinct|einzigartig|ohne dopp)\\b.*")
+                && !(s.contains("distinct") || s.contains("group by"))) {
+            out.add("MISSING_DISTINCT_OR_GROUPBY");
         }
         return out;
     }

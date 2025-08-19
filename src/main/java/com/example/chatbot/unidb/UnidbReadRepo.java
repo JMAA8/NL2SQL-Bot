@@ -39,7 +39,8 @@ public class UnidbReadRepo {
     /** Nur Hash & RowCount (für Referenz-SQL). */
     public QueryRun hashOnly(String sql) throws SQLException {
         if (!isSelectOnly(sql)) {
-            return new QueryRun(false, "NON-SELECT", 0.0, 0, null, null, has(sql,"group by"),has(sql,"order by"),has(sql,"limit"),has(sql," between "));
+            return new QueryRun(false, "NON-SELECT", 0.0, 0, null, null,
+                    has(sql,"group by"),has(sql,"order by"),has(sql,"limit"),has(sql," between "));
         }
         long t0 = System.nanoTime();
         int rows = 0;
@@ -48,9 +49,10 @@ public class UnidbReadRepo {
         boolean ok = false;
         try (Connection c = ds.getConnection();
              PreparedStatement ps = c.prepareStatement("SELECT * FROM (" + sql + ") __x")) {
+            // optional: ps.setQueryTimeout(10); ps.setFetchSize(500);
             try (ResultSet rs = ps.executeQuery()) {
                 hash = digestResultSet(rs);
-                rows = lastRowCount; // set by digestResultSet
+                rows = lastRowCount;
                 ok = true;
             }
         } catch (SQLException e) {
@@ -72,7 +74,9 @@ public class UnidbReadRepo {
         // 1) Preview (LIMIT)
         String preview;
         try (Connection c = ds.getConnection();
-             PreparedStatement ps = c.prepareStatement("WITH __q AS (" + sql + ") SELECT * FROM __q LIMIT " + Math.max(1, limitRows));
+             PreparedStatement ps = c.prepareStatement(
+                     "WITH __q AS (" + sql + ") SELECT * FROM __q LIMIT " + Math.max(1, limitRows)
+             );
              ResultSet rs = ps.executeQuery()) {
             preview = renderMarkdown(rs);
         }
@@ -83,7 +87,8 @@ public class UnidbReadRepo {
         try (Connection c = ds.getConnection();
              PreparedStatement ps = c.prepareStatement("SELECT * FROM (" + sql + ") __x");
              ResultSet rs = ps.executeQuery()) {
-            hash = digestResultSet(rs);
+            // optional: ps.setQueryTimeout(10); ps.setFetchSize(1000);
+            hash = digestResultSet(rs); // ordnungs-invariant
             rows = lastRowCount;
             ok = true;
         } catch (SQLException e) {
@@ -104,6 +109,12 @@ public class UnidbReadRepo {
 
     private int lastRowCount = 0;
 
+    /**
+     * Erzeugt einen MD5 über die Menge aller Zeilen, **unabhängig von der Reihenfolge**:
+     * - Jede Zeile -> Fingerprint-String
+     * - Alle Zeilen-Fingerprints sortieren
+     * - Dann in MD5 einspeisen
+     */
     private String digestResultSet(ResultSet rs) throws SQLException {
         MessageDigest md;
         try { md = MessageDigest.getInstance("MD5"); }
@@ -113,20 +124,39 @@ public class UnidbReadRepo {
         int cols = mdta.getColumnCount();
         lastRowCount = 0;
 
+        List<String> rowPrints = new ArrayList<>(1024);
         while (rs.next()) {
             lastRowCount++;
-            // eine stabile Zeilenrepräsentation bauen
-            StringBuilder sb = new StringBuilder();
-            for (int i=1;i<=cols;i++) {
-                Object v = rs.getObject(i);
-                sb.append(v == null ? "NULL" : String.valueOf(v));
-                if (i < cols) sb.append('|');
-            }
-            sb.append('\n');
-            md.update(sb.toString().getBytes(StandardCharsets.UTF_8));
+            rowPrints.add(rowFingerprint(rs, cols));
         }
-        byte[] digest = md.digest();
-        return toHex(digest);
+
+        if (rowPrints.isEmpty()) {
+            // definierter Hash für "keine Zeilen"
+            md.update("__EMPTY__".getBytes(StandardCharsets.UTF_8));
+        } else {
+            // Ordnung stabilisieren
+            Collections.sort(rowPrints);
+            for (String rp : rowPrints) {
+                md.update(rp.getBytes(StandardCharsets.UTF_8));
+                md.update((byte) '\n');
+            }
+        }
+        return toHex(md.digest());
+    }
+
+    private static String rowFingerprint(ResultSet rs, int cols) throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        for (int i=1;i<=cols;i++) {
+            Object v = rs.getObject(i);
+            if (v == null) {
+                sb.append("NULL");
+            } else {
+                // einfache, konsistente String-Repräsentation
+                sb.append(String.valueOf(v));
+            }
+            if (i < cols) sb.append('|');
+        }
+        return sb.toString();
     }
 
     private static String toHex(byte[] b) {
