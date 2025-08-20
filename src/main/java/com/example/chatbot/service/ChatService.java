@@ -26,13 +26,15 @@ public class ChatService {
     @Inject RunState runState;
     @Inject SemanticAnalyzer semanticAnalyzer;
 
-    // NEU:
+    // RBAC/Schema & JWT/Identity
     @Inject SchemaPruner schemaPruner;
     @Inject RbacValidator rbacValidator;
+    @Inject JwtRoleService jwtRoleService;
+    @Inject IdentityService identityService;
 
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
-        long t0 = System.nanoTime(); // E2E-Startzeit messen
+        long t0 = System.nanoTime();
 
         Chat chat = (chatId != null) ? chatRepository.findByChatId(chatId) : null;
         if (chat == null) {
@@ -46,99 +48,76 @@ public class ChatService {
         String finalAnswer;
         try {
             if ("db".equals(simpleRoute(prompt))) {
-                // 1) Benchmark-Run sicherstellen
-                runState.ensureRun(bench, "WebApp Baseline", "v9");
+                runState.ensureRun(bench, "WebApp Optimization", "v1");
                 int testNo = runState.nextTestNo();
 
-                // 2) Schema-Pruning (rollen- und frageabhängig)
-                String role = currentUserRole(); // TODO: aus Security-Kontext ziehen
-                var tables = schemaPruner.filterByRole(schemaPruner.suggestTables(prompt), role);
-                String schemaSnippet = schemaPruner.buildSchemaSnippet(tables);
+                // (A) JWT → AppRole + benutzer_id → IdentityContext
+                AppRole appRole = jwtRoleService.getCurrentAppRole();
+                Long benutzerId = jwtRoleService.getCurrentUserId();
+                IdentityService.IdentityContext idCtx = identityService.resolveByBenutzerId(benutzerId, appRole);
 
-                // 3) NL->SQL (eine Variante; optional: generateCandidates+Ranking)
-                String gen = nl2sql.generateSql(prompt, schemaSnippet);
+                // (B) Schema-Pruning (rollen-/frageabhängig)
+                var tables = schemaPruner.filterByRole(schemaPruner.suggestTables(prompt), appRole);
+                String schemaSnippet = schemaPruner.buildSchemaSnippet(tables, appRole);
 
-                // 4) Frage-Mapping & E2E
-                Integer qno = bench.findQuestionNoByExactText(prompt); // kann null sein
+                // (C) NL→SQL mit Identitäts-/RLS-Hinweisen (eine Zeile, read-only)
+                String gen = nl2sql.generateSql(prompt, schemaSnippet, idCtx, appRole);
+
+                // (D) Logging (Vorab)
+                Integer qno = bench.findQuestionNoByExactText(prompt);
                 double e2eMs = (System.nanoTime() - t0) / 1_000_000.0;
-
-                // 5) Vorab-Log (legt evaluation_result an)
                 bench.evalNoActor(runState.getRunId(), (qno != null ? qno : 0), testNo, prompt, gen, e2eMs);
 
-                // 6) Guards (ReadOnly + RBAC)
-                boolean isReadOnly = unidb.isSelectOnly(gen);   // ACHTUNG: Methode in UnidbReadRepo public machen
-                var rbac = rbacValidator.check(role, gen);
+                // (E) Guards
+                boolean isReadOnly = unidb.isSelectOnly(gen);
+                var rbac = rbacValidator.check(appRole, gen);
                 String violJson = toJsonArray(rbac.violations);
 
                 if (!isReadOnly) {
-                    // BLOCK → nur Flags loggen
                     String compAccJson = bench.buildClauseFlagsJson(gen);
-                    bench.updateAfterExec(
-                            runState.getRunId(), testNo,
-                            bench.normalizeSql(gen),
-                            /*is_read_only*/ false,
-                            rbac.ok, violJson,
-                            /*exec_ok*/ null, /*exec_error*/ null,
-                            /*exec_ms*/ null, /*row_count*/ null, /*result_hash*/ null,
-                            /*exact_match*/ null, /*exec_accuracy*/ null,
-                            compAccJson
-                    );
+                    bench.updateAfterExec(runState.getRunId(), testNo, bench.normalizeSql(gen),
+                            false, rbac.ok, violJson,
+                            null, null, null, null, null,
+                            null, null, compAccJson);
                     finalAnswer = "BLOCK (kein SELECT).";
                 } else {
                     String effectiveSql = rbac.ok ? gen : "SELECT COUNT(*) AS cnt FROM (" + gen + ") x";
 
-                    // 7) Ausführen & messen
-                    UnidbReadRepo.QueryRun run = unidb.runAndHashSelect(effectiveSql, 25);
+                    var run = unidb.runAndHashSelect(effectiveSql, 25);
 
-                    // 8) Gold-Referenz (falls vorhanden)
                     String refSql = (qno != null) ? bench.fetchRefSqlByQuestionNo(qno) : null;
-
                     Boolean exactMatch = null, execAcc = null;
                     String compAccJson = bench.buildClauseFlagsJson(effectiveSql);
 
                     if (run.execOk && refSql != null && unidb.isSelectOnly(refSql)) {
                         exactMatch = bench.sqlEqualsNormalized(effectiveSql, refSql);
-                        var ref = unidb.hashOnly(refSql); // nur Hash/Count
+                        var ref = unidb.hashOnly(refSql);
                         execAcc = (ref.execOk && ref.resultHash != null && ref.resultHash.equals(run.resultHash));
                         compAccJson = bench.mergeCompAccWithJaccard(compAccJson, effectiveSql, refSql);
                     }
 
-                    // 9) Update Log
-                    bench.updateAfterExec(
-                            runState.getRunId(), testNo,
-                            bench.normalizeSql(effectiveSql),
-                            /*is_read_only*/ true,
-                            rbac.ok, violJson,
+                    bench.updateAfterExec(runState.getRunId(), testNo, bench.normalizeSql(effectiveSql),
+                            true, rbac.ok, violJson,
                             run.execOk, run.execError, run.execMs, run.rowCount, run.resultHash,
-                            exactMatch, execAcc, compAccJson
-                    );
+                            exactMatch, execAcc, compAccJson);
 
-                    // 10) Semantiklabels anhängen
                     List<String> semErrs = semanticAnalyzer.detect(effectiveSql, prompt);
                     if (!semErrs.isEmpty()) bench.appendSemanticErrors(runState.getRunId(), testNo, semErrs);
 
-                    // 11) Antwort
-                    finalAnswer = run.preview; // hübsche Markdown-Tabelle oder _(keine Zeilen)_
+                    finalAnswer = run.preview;
                 }
             } else {
-                // Plain-LLM/Dokumente
                 finalAnswer = llmService.getResponse(prompt);
             }
         } catch (Exception e) {
             finalAnswer = "Fehler: " + e.getMessage();
         }
 
-        // Chatnachricht persistieren
         ChatMessage msg = new ChatMessage(chat.getChatId(), userId, prompt, finalAnswer);
         chatMessageRepository.persistMessage(msg);
         chat.setMessages(chatMessageRepository.findMessagesByChatId(chat.getChatId()));
         chatRepository.update(chat);
         return chat;
-    }
-
-    private String currentUserRole() {
-        // TODO: aus Security-Kontext. Bis dahin Standard:
-        return "Student";
     }
 
     private String toJsonArray(List<String> xs) {

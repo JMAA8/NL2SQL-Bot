@@ -18,39 +18,40 @@ public class RbacValidator {
         Map<String, Set<String>> map = new HashMap<>();
         if (sql == null) return map;
         String s = sql.trim();
-        // crude: SELECT-Spaltenliste (erste SELECT ... FROM)
-        int sel = s.toLowerCase().indexOf("select");
-        int from = s.toLowerCase().indexOf(" from ");
-        if (sel >=0 && from > sel) {
-            String proj = s.substring(sel + 6, from).trim();
-            // split by comma, remove funcs/aliases
-            String[] cols = proj.split(",");
-            for (String c : cols) {
-                String cc = c.replaceAll("(?i)\\bas\\b.*","")
-                        .replaceAll("[^a-z0-9_\\.]", " ").trim();
-                if (cc.isBlank() || cc.equals("*")) continue;
-                // optional: t.col -> Tabelle unbekannt; wir prüfen gegen jede Tabelle später
-            }
-        }
+
         // Tabellen sammeln
         Matcher m = Pattern.compile("(?i)\\b(from|join)\\s+([a-z_][a-z0-9_]*)").matcher(s);
         while (m.find()) map.putIfAbsent(m.group(2), new HashSet<>());
+
+        // (Optional) Projektion parsen, falls du Spalten prüfen willst – hier weggelassen für Robustheit
         return map;
     }
 
-    /** Prüft Tabellen/Spalten gegen Rollen-Matrix. Admin => immer ok. */
+    /** String-API bleibt: prüft Tabellen/Spalten gegen Rollen-Matrix. Admin => alles ok (policy.allowedFor("Admin") == null). */
     public RbacCheckResult check(String role, String sql) {
         Map<String, Set<String>> allow = policy.allowedFor(role);
         if (allow == null) return RbacCheckResult.ok(); // Admin = alles
         Map<String, Set<String>> used = extract(sql);
         List<String> violations = new ArrayList<>();
         for (String t : used.keySet()) {
-            if (!allow.containsKey(t)) {
-                violations.add("TABLE:" + t);
-            }
-            // Spaltenprüfung optional verfeinern (hier: nur wenn proj. Spalten explizit geparst würden)
+            if (!allow.containsKey(t)) violations.add("TABLE:" + t);
+            // Spaltenprüfung könntest du hier ergänzen
         }
         return violations.isEmpty() ? RbacCheckResult.ok() : RbacCheckResult.fail(violations);
+    }
+
+    // ---- NEU: AppRole-Overload (delegiert auf String-API) ----
+    public RbacCheckResult check(AppRole role, String sql) {
+        return check(mapToRoleString(role), sql);
+    }
+
+    private static String mapToRoleString(AppRole role) {
+        if (role == null) return "Student";
+        return switch (role) {
+            case ADMIN -> "Admin";
+            case ADVANCED_USER -> "Professor";
+            case BASIC_USER -> "Student";
+        };
     }
 
     public static class RbacCheckResult {
