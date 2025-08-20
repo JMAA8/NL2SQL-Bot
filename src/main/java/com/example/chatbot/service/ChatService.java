@@ -5,14 +5,16 @@ import com.example.chatbot.entityMongoDB.ChatMessage;
 import com.example.chatbot.repository.ChatMessageRepository;
 import com.example.chatbot.repository.ChatRepository;
 import com.example.chatbot.unidb.*;
+import com.example.chatbot.unidb.RbacValidator.IdentityContext;
+import com.example.chatbot.llm.LLMService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import com.example.chatbot.llm.LLMService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class ChatService {
@@ -20,6 +22,7 @@ public class ChatService {
     @Inject ChatRepository chatRepository;
     @Inject ChatMessageRepository chatMessageRepository;
     @Inject LLMService llmService;
+
     @Inject NL2SQLService nl2sql;
     @Inject BenchRepo bench;
     @Inject UnidbReadRepo unidb;
@@ -31,6 +34,7 @@ public class ChatService {
     @Inject RbacValidator rbacValidator;
     @Inject JwtRoleService jwtRoleService;
     @Inject IdentityService identityService;
+    @Inject SqlLinter sqlLinter;
 
     @Transactional
     public Chat handleChatMessage(Long userId, String chatId, String prompt) {
@@ -48,29 +52,63 @@ public class ChatService {
         String finalAnswer;
         try {
             if ("db".equals(simpleRoute(prompt))) {
-                runState.ensureRun(bench, "WebApp Optimization", "v1");
+                runState.ensureRun(bench, "WebApp Optimization", "v9"); // neue Pipeline-Version
                 int testNo = runState.nextTestNo();
 
-                // (A) JWT → AppRole + benutzer_id → IdentityContext
+                // (A) Rolle + Identity
                 AppRole appRole = jwtRoleService.getCurrentAppRole();
                 Long benutzerId = jwtRoleService.getCurrentUserId();
-                IdentityService.IdentityContext idCtx = identityService.resolveByBenutzerId(benutzerId, appRole);
+                IdentityService.IdentityContext resolved = identityService.resolveByBenutzerId(benutzerId, appRole);
 
-                // (B) Schema-Pruning (rollen-/frageabhängig)
+                // RbacValidator.IdentityContext aus resolved ableiten
+                RbacValidator.IdentityContext idCtx = new RbacValidator.IdentityContext(
+                        resolved == null ? null : resolved.benutzerId,
+                        resolved == null ? null : resolved.studentId,
+                        resolved == null ? null : resolved.professorId
+                );
+
+                // (B) Schema-Pruning
                 var tables = schemaPruner.filterByRole(schemaPruner.suggestTables(prompt), appRole);
                 String schemaSnippet = schemaPruner.buildSchemaSnippet(tables, appRole);
 
-                // (C) NL→SQL mit Identitäts-/RLS-Hinweisen (eine Zeile, read-only)
-                String gen = nl2sql.generateSql(prompt, schemaSnippet, idCtx, appRole);
+                // (C1) NL→SQL
+                String gen = nl2sql.generateSql(prompt, schemaSnippet, resolved, appRole);
 
-                // (D) Logging (Vorab)
+                // Sofort sanitisieren
+                gen = sqlLinter.stripTrailingSemicolons(gen);
+                gen = sqlLinter.normalizeWhitespace(gen);
+
+                // (C2) Lint + Auto-Repair (nur einmal)
+                var lintIssues = sqlLinter.lint(gen);
+                if (!lintIssues.isEmpty()) {
+                    String hint = sqlLinter.buildHint(lintIssues);
+                    String repaired = nl2sql.repairWithError(prompt, schemaSnippet, gen, hint);
+                    if (repaired != null && !repaired.isBlank()) {
+                        repaired = sqlLinter.extractFirstSelect(repaired); // <— NEU: nur die SELECT-Zeile
+                        repaired = sqlLinter.stripTrailingSemicolons(repaired);
+                        repaired = sqlLinter.normalizeWhitespace(repaired);
+                        if (unidb.isSelectOnly(repaired)) gen = repaired;
+                    }
+                }
+
+                 // (C2b) NEU: auch ohne LLM-Repair sauber nur SELECT herausschneiden
+                gen = sqlLinter.extractFirstSelect(gen);
+
+                // (C2c) NEU: Platzhalter-IDs gegen echte ID tauschen
+                gen = sqlLinter.substituteStudentIdPlaceholders(gen, resolved == null ? null : resolved.studentId);
+
+                // (C3) NEU: Self-Scope deterministisch injizieren (kein weiterer LLM-Call!)
+                if (appRole == AppRole.BASIC_USER) {
+                    gen = sqlLinter.injectSelfPredicateIfNeeded(gen, resolved == null ? null : resolved.studentId);
+                }
+                // (D) Vorab-Log
                 Integer qno = bench.findQuestionNoByExactText(prompt);
                 double e2eMs = (System.nanoTime() - t0) / 1_000_000.0;
                 bench.evalNoActor(runState.getRunId(), (qno != null ? qno : 0), testNo, prompt, gen, e2eMs);
 
-                // (E) Guards
+                // (E) Guards: ReadOnly + RBAC
                 boolean isReadOnly = unidb.isSelectOnly(gen);
-                var rbac = rbacValidator.check(appRole, gen);
+                var rbac = rbacValidator.check(appRole, idCtx, gen);
                 String violJson = toJsonArray(rbac.violations);
 
                 if (!isReadOnly) {
@@ -81,14 +119,39 @@ public class ChatService {
                             null, null, compAccJson);
                     finalAnswer = "BLOCK (kein SELECT).";
                 } else {
-                    String effectiveSql = rbac.ok ? gen : "SELECT COUNT(*) AS cnt FROM (" + gen + ") x";
+                    // Degradierung: bei RBAC-Verletzung aggregieren
+                    String effectiveSql = rbac.ok ? gen
+                            : (gen.toLowerCase().contains("count(") ? gen : "SELECT COUNT(*) AS cnt FROM (" + gen + ") x");
 
                     var run = unidb.runAndHashSelect(effectiveSql, 25);
 
+                    // (F) Defensiver Repair nach DB-Fehler
+                    if (!run.execOk && run.execError != null) {
+                        // 1) Semikolons nochmal hart entfernen & retry
+                        String eff = sqlLinter.stripTrailingSemicolons(effectiveSql);
+                        eff = sqlLinter.normalizeWhitespace(eff);
+                        if (!eff.equals(effectiveSql) && unidb.isSelectOnly(eff)) {
+                            effectiveSql = eff;
+                            run = unidb.runAndHashSelect(effectiveSql, 25);
+                        }
+                        // 2) Falls weiter Fehler: LLM-Repair mit echter DB-Fehlermeldung
+                        if (!run.execOk) {
+                            String repaired = nl2sql.repairWithError(prompt, schemaSnippet, effectiveSql, run.execError);
+                            if (repaired != null && !repaired.isBlank()) {
+                                repaired = sqlLinter.stripTrailingSemicolons(repaired);
+                                repaired = sqlLinter.normalizeWhitespace(repaired);
+                                if (unidb.isSelectOnly(repaired)) {
+                                    effectiveSql = repaired;
+                                    run = unidb.runAndHashSelect(effectiveSql, 25);
+                                }
+                            }
+                        }
+                    }
+
+                    // Gold-Vergleich (falls vorhanden)
                     String refSql = (qno != null) ? bench.fetchRefSqlByQuestionNo(qno) : null;
                     Boolean exactMatch = null, execAcc = null;
                     String compAccJson = bench.buildClauseFlagsJson(effectiveSql);
-
                     if (run.execOk && refSql != null && unidb.isSelectOnly(refSql)) {
                         exactMatch = bench.sqlEqualsNormalized(effectiveSql, refSql);
                         var ref = unidb.hashOnly(refSql);
@@ -101,7 +164,7 @@ public class ChatService {
                             run.execOk, run.execError, run.execMs, run.rowCount, run.resultHash,
                             exactMatch, execAcc, compAccJson);
 
-                    List<String> semErrs = semanticAnalyzer.detect(effectiveSql, prompt);
+                    var semErrs = semanticAnalyzer.detect(effectiveSql, prompt);
                     if (!semErrs.isEmpty()) bench.appendSemanticErrors(runState.getRunId(), testNo, semErrs);
 
                     finalAnswer = run.preview;
@@ -131,7 +194,6 @@ public class ChatService {
         return sb.toString();
     }
 
-    // Route-Heuristik
     private static final Pattern DB_HINTS = Pattern.compile(
             ".*\\b(" +
                     "kurs|kurse|kursen|kursname|kursnamen|datenbanken|ects|semester|ss\\d{4}|ws\\d{4}|" +
@@ -151,6 +213,35 @@ public class ChatService {
     private String simpleRoute(String p) {
         String s = (p == null) ? "" : p;
         return DB_HINTS.matcher(s).matches() ? "db" : "docs";
+    }
+
+    // --- kleine Helfer für Self-Scope-Check ---
+    private boolean usesStudentScopeTables(String sql) {
+        if (sql == null) return false;
+        String s = sql.toLowerCase();
+        return s.contains(" studenten") || s.contains(" kursbelegung") || s.contains(" anmeldung_pruefung")
+                || s.contains(" studenten ") || s.contains(" kursbelegung ") || s.contains(" anmeldung_pruefung ");
+    }
+
+    private boolean hasSelfPredicate(String sql, Long studentId) {
+        if (sql == null || studentId == null) return false;
+        String needle = "student_id = " + studentId;
+        return sql.toLowerCase().contains(needle.toLowerCase());
+    }
+
+    private String sanitizeStudentIdPlaceholders(String sql, Long studentId) {
+        if (sql == null || studentId == null) return sql;
+        String[] tokens = {
+                "eigene id","deine id","meine id",
+                "your_student_id","my_student_id","student_self_id"
+        };
+        for (String t : tokens) {
+            // 'token' → 123
+            sql = sql.replaceAll("(?i)'\\s*" + Pattern.quote(t) + "\\s*'", String.valueOf(studentId));
+            // token   → 123
+            sql = sql.replaceAll("(?i)\\b" + Pattern.quote(t) + "\\b", String.valueOf(studentId));
+        }
+        return sql;
     }
 
     // --- Zusatz-APIs (unverändert)
@@ -184,3 +275,7 @@ public class ChatService {
         return chatMessageRepository.findMessagesByChatId(chatId);
     }
 }
+
+
+
+

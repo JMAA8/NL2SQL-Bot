@@ -10,85 +10,53 @@ import java.util.*;
 @ApplicationScoped
 public class JwtRoleService {
 
-    @Inject SecurityIdentity identity;   // Quarkus
-    @Inject JsonWebToken jwt;            // MicroProfile JWT
+    @Inject SecurityIdentity identity;
+    @Inject JsonWebToken jwt;
 
     public AppRole getCurrentAppRole() {
         Set<String> roles = new LinkedHashSet<>();
-
-        // 1) Quarkus Identity (bevorzugt)
-        if (identity != null && !identity.isAnonymous()) {
-            roles.addAll(identity.getRoles());
-        }
-
-        // 2) MP-JWT groups
-        if (roles.isEmpty() && jwt != null && jwt.getGroups() != null) {
-            roles.addAll(jwt.getGroups());
-        }
-
-        // 3) generische Claims
+        if (identity != null && !identity.isAnonymous()) roles.addAll(identity.getRoles());
+        if (roles.isEmpty() && jwt != null && jwt.getGroups() != null) roles.addAll(jwt.getGroups());
         if (roles.isEmpty() && jwt != null) {
-            addAnyClaim(roles, jwt.getClaim("role"));
-            addAnyClaim(roles, jwt.getClaim("roles"));
-            addAnyClaim(roles, jwt.getClaim("authorities"));
+            addAny(roles, jwt.getClaim("roles"));
+            addAny(roles, jwt.getClaim("authorities"));
+            Object realm = jwt.getClaim("realm_access");
+            if (realm instanceof Map<?,?> m) addAny(roles, m.get("roles"));
+            Object res = jwt.getClaim("resource_access");
+            if (res instanceof Map<?,?> rm) rm.values().forEach(v -> {
+                if (v instanceof Map<?,?> client) addAny(roles, client.get("roles"));
+            });
         }
-
-        // 4) Keycloak-typisch
-        if (roles.isEmpty() && jwt != null) {
-            Object realmAccess = jwt.getClaim("realm_access");
-            if (realmAccess instanceof Map<?,?> m) addAnyClaim(roles, m.get("roles"));
-            Object resAccess = jwt.getClaim("resource_access");
-            if (resAccess instanceof Map<?,?> rm) {
-                for (Object v : rm.values()) if (v instanceof Map<?,?> c) addAnyClaim(roles, c.get("roles"));
-            }
-        }
-
-        // Mapping-Priorität
-        if (anyMatch(roles, "admin")) return AppRole.ADMIN;
-        if (anyMatch(roles, "advanced_user", "professor")) return AppRole.ADVANCED_USER;
+        String s = roles.stream().map(x -> x == null ? "" : x.toLowerCase(Locale.ROOT)).findFirst().orElse("");
+        if (s.contains("admin")) return AppRole.ADMIN;
+        if (s.contains("advanced") || s.contains("professor")) return AppRole.ADVANCED_USER;
         return AppRole.BASIC_USER;
     }
 
-    /** JWT userId → in deiner DB = benutzer.benutzer_id */
+    /** Erwartet im JWT einen Claim 'userId' (long) oder im PrincipalName eine Zahl. */
     public Long getCurrentUserId() {
-        // Quarkus Identity Attribut?
-        if (identity != null) {
-            Object v = identity.getAttribute("userId");
-            if (v instanceof Number n) return n.longValue();
-            if (v != null) return Long.valueOf(v.toString());
-        }
-        // MP-JWT Claim?
         if (jwt != null) {
             Object v = jwt.getClaim("userId");
             if (v instanceof Number n) return n.longValue();
-            if (v != null) return Long.valueOf(v.toString());
+            if (v instanceof String st && st.matches("\\d+")) return Long.parseLong(st);
+            String sub = jwt.getSubject();
+            if (sub != null && sub.matches("\\d+")) return Long.parseLong(sub);
+        }
+        if (identity != null && identity.getPrincipal() != null) {
+            String name = identity.getPrincipal().getName();
+            if (name != null && name.matches("\\d+")) return Long.parseLong(name);
         }
         return null;
     }
 
-    public String getCurrentUsername() {
-        if (identity != null && identity.getPrincipal() != null) return identity.getPrincipal().getName();
-        if (jwt != null && jwt.getName() != null) return jwt.getName();
-        Object un = (jwt != null) ? jwt.getClaim("username") : null;
-        return un == null ? null : String.valueOf(un);
-    }
-
-    private static boolean anyMatch(Collection<String> roles, String... needles) {
-        for (String r : roles) {
-            String x = r == null ? "" : r.toLowerCase(Locale.ROOT);
-            for (String n : needles) if (x.contains(n)) return true;
-        }
-        return false;
-    }
-
     @SuppressWarnings("unchecked")
-    private static void addAnyClaim(Set<String> out, Object claim) {
+    private static void addAny(Set<String> out, Object claim) {
         if (claim == null) return;
         if (claim instanceof String s) {
-            if (s.contains(",")) for (String p : s.split(",")) out.add(p.trim());
+            if (s.contains(",")) Arrays.stream(s.split(",")).forEach(p -> out.add(p.trim()));
             else out.add(s.trim());
         } else if (claim instanceof Collection<?> c) {
-            for (Object o : c) if (o != null) out.add(String.valueOf(o).trim());
+            c.forEach(o -> { if (o != null) out.add(String.valueOf(o).trim()); });
         } else if (claim instanceof String[] arr) {
             for (String s : arr) if (s != null) out.add(s.trim());
         }
